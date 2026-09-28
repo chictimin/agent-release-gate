@@ -43,8 +43,8 @@ pnpm serve
    auto 5 / stop 9 / mismatch 0
    sandbox commits: 6
    ```
-4. `pnpm serve` — 서버를 띄운다. (서버 통합 후 확인)
-5. 브라우저에서 `http://127.0.0.1:7788` 을 연다. (서버 통합 후 확인)
+4. `pnpm serve` — 서버를 띄운다.
+5. 브라우저에서 `http://127.0.0.1:7788` 을 연다.
 
 ## 멈춘 건 재개 (CLI)
 
@@ -60,7 +60,22 @@ pnpm batch resume <case_id> approve|reject [note]
   }
   ```
 - `reject` — 반영 없이 `rejected`로 기록한다. 서버 API에서는 `note`가 필수다
-  (빈 문자열이면 400). (서버 통합 후 확인)
+  (빈 문자열이면 400).
+
+## API
+
+`GET /`는 `src/ui.html`을 서빙한다. API 응답은 전부 JSON이며,
+에러는 `{ "error": "..." }` 형태와 상태코드로 돌려준다
+(`.roster/api-contract.md`가 정본).
+
+| 메서드·경로 | 응답 |
+|---|---|
+| `GET /api/cases` | 200, 전체 14건 요약(`case_id` 오름차순). 항목: `case_id`, `request`, `status`(`not_run`/`pending`/`auto_applied`/`approved_applied`/`rejected`), `stop_reasons`, `risk_score`(`not_run`이면 `null`) |
+| `GET /api/cases/:id` | 200 상세. 요약 항목에 `diff`, `files`, `lines_changed`, `test_passed`, `rationale`, `effect_on_approve`, `decision`, `reviewer_note`, `commit_sha` 추가. 모르는 id면 404 |
+| `GET /api/stats` | 200, `auto`·`pending`·`approved`·`rejected`·`not_run` 수와 `sandbox_commits` |
+| `POST /api/run-all` | 200, 아직 실행 안 된 건만 일괄 실행하고 통계 돌려줌 |
+| `POST /api/cases/:id/approve` | body `{ "note"?: string }` → 200 상세. pending이 아니면 409, 모르는 id면 404 |
+| `POST /api/cases/:id/reject` | body `{ "note": string }` 필수 → 200 상세. `note`가 비었으면 400, pending이 아니면 409, 모르는 id면 404 |
 
 ## 리셋 방법
 

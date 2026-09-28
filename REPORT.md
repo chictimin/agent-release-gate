@@ -116,7 +116,6 @@ fixture의 `expected`와 일치한다는 뜻이다.
 ## 7. 화면 설계
 
 `.roster/api-contract.md`와 `.roster/spec-2.md` 기준이며, 서버 통합 전이라 실제 화면은 미확인이다.
-(서버 통합 후 확인)
 
 - 목록: 대기 건의 `case_id`·요청 요약·멈춤 사유 배지
   (`size`·`protected_path`·`secret`·`test_failed` 각각 다른 색 + 텍스트 라벨)·위험 점수
