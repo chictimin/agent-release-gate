@@ -159,11 +159,9 @@ eb1f312의 추가분(결정 바 승인 효과 한 줄)은 하네스 실행 범�
 
 화면 캡처 자리:
 
-![대기 목록](docs/screenshots/01-pending.png)
-![상세](docs/screenshots/02-detail.png)
-![제출 확인](docs/screenshots/03-submit.png)
-
-위 3장은 캡틴 촬영 예정이다. 이미지 파일은 저장소에 넣지 않았다.
+![대기 목록 (캡틴이 일부 건을 처리한 뒤의 화면: 대기 5 · 이력 9)](docs/screenshots/01-pending.jpg)
+![상세](docs/screenshots/02-detail.jpg)
+![제출 확인](docs/screenshots/03-submit.jpg)
 
 ## 8. 한계와 확장
 

@@ -3,3 +3,4 @@ dist/
 data/
 sandbox/
 .roster/
+.DS_Store
