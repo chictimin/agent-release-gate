@@ -67,15 +67,22 @@ export function computeSignals(args: {
     args.files.length > SIZE_MAX_FILES
   ) {
     signals.push("size");
-    rationale.push(
-      `변경 규모가 상한을 넘음 (줄 ${args.linesChanged} > ${SIZE_MAX_LINES} 또는 파일 ${args.files.length} > ${SIZE_MAX_FILES})`,
-    );
+    if (args.linesChanged > SIZE_MAX_LINES) {
+      rationale.push(
+        `변경 줄 ${args.linesChanged}줄 (상한 ${SIZE_MAX_LINES}줄)`,
+      );
+    }
+    if (args.files.length > SIZE_MAX_FILES) {
+      rationale.push(
+        `변경 파일 ${args.files.length}개 (상한 ${SIZE_MAX_FILES}개)`,
+      );
+    }
   }
 
   const protectedFiles = args.files.filter(isProtectedPath);
   if (protectedFiles.length > 0) {
     signals.push("protected_path");
-    rationale.push(`보호 경로 포함: ${protectedFiles.join(", ")}`);
+    rationale.push(`핵심 설정 파일 포함: ${protectedFiles.join(", ")}`);
   }
 
   const secretHit = args.addedLines.some((l) =>
@@ -83,12 +90,12 @@ export function computeSignals(args: {
   );
   if (secretHit) {
     signals.push("secret");
-    rationale.push("추가된 줄에 비밀 형식 문자열이 있음");
+    rationale.push("추가된 줄에 키 노출 의심 문자열이 있음");
   }
 
   if (args.testPassed === false) {
     signals.push("test_failed");
-    rationale.push("테스트가 실패함 (test_passed === false)");
+    rationale.push("테스트 실패 (test_passed === false)");
   }
 
   const raw = signals.reduce((sum, s) => sum + (RISK_WEIGHTS[s] ?? 0), 0);

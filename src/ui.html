@@ -133,15 +133,12 @@
   .case .req.oneline {
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .case .cause {
+  .riskn {
     display: inline-flex; gap: 4px; align-items: center; flex: 0 0 auto;
-    font-size: 12px; color: var(--muted); font-weight: 400; margin-left: 8px;
+    font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
-  .cdot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: 0 0 auto; }
-  .cdot.secret { background: #ff8182; }
-  .cdot.test_failed { background: #54aeff; }
-  .cdot.protected_path { background: #d2a8ff; }
-  .cdot.size { background: #d4a72c; }
+  .rdot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: 0 0 auto; }
   .case .sub, .histrow .sub {
     margin-top: 4px; font-size: 11px; color: var(--muted);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -167,6 +164,8 @@
   .badge.frenamed { background: var(--canvas); border-color: var(--border); color: var(--muted); }
   .badge.draft-approve { background: var(--add-bg); border-color: #4ac26b; color: var(--ok); font-weight: 600; }
   .badge.draft-reject { background: var(--del-bg); border-color: #ff8182; color: var(--danger); font-weight: 600; }
+  /* spec-10: 상태 라벨·칩·점수는 줄바꿈 없이 고정, 줄어들 쪽은 제목 */
+  .badge, .status, .riskn { white-space: nowrap; flex-shrink: 0; }
   .risk { font-variant-numeric: tabular-nums; }
   .empty { padding: 16px; color: var(--faint); font-size: 13px; }
   /* 워크스페이스 트리 */
@@ -243,11 +242,26 @@
   #draftline:empty { display: none; }
   .decided { margin-top: 8px; font-size: 13px; color: var(--muted); }
   .decided .sha { font-family: var(--mono); font-size: 11px; }
-  .detailbody { padding: 4px 16px 16px; }
+  .detailbody { padding: 12px 16px 16px; }
   .detailbody section { margin: 12px 0; }
   .detailbody h3 { font-size: 12px; color: var(--muted); font-weight: 600; margin: 0 0 8px; }
+  /* spec-10: GitHub Box 스타일 섹션 구획 */
+  .detailbody section.box {
+    border: 1px solid var(--border); border-radius: 6px; margin: 0 0 16px;
+    background: var(--bg);
+  }
+  .detailbody section.box > h3 {
+    font-size: 14px; font-weight: 600; color: var(--fg);
+    background: var(--canvas); border-bottom: 1px solid var(--border);
+    margin: 0; padding: 8px 12px; border-radius: 6px 6px 0 0;
+  }
+  .boxbody { padding: 8px 12px; }
+  .kv { display: flex; gap: 8px; margin: 4px 0; font-size: 13px; }
+  .kv .k { flex: 0 0 88px; color: var(--muted); }
+  .kv .v { flex: 1 1 auto; min-width: 0; overflow-wrap: break-word; }
   .detailbody p { margin: 0 0 4px; overflow-wrap: break-word; }
   ul.rationale { margin: 0; padding-left: 16px; }
+  ul.rationale.muted { color: var(--muted); font-size: 13px; margin: 4px 0; }
   .filewrap { display: flex; gap: 16px; align-items: flex-start; }
   .tree { flex: 0 0 220px; min-width: 0; font-size: 12px; }
   .tree details { margin-bottom: 4px; }
@@ -367,8 +381,8 @@
   <section id="panel" data-role="case-panel" data-collapsed="false" aria-label="케이스 패널">
     <div id="panelMain">
       <div id="tabs" role="tablist" aria-label="보기 전환">
-        <button id="tabPending" role="tab" aria-selected="true" type="button" data-role="tab-pending">승인 대기 0</button>
-        <button id="tabHistory" role="tab" aria-selected="false" type="button" data-role="tab-history">처리 이력 0</button>
+        <button id="tabPending" role="tab" aria-selected="true" type="button" data-role="tab-pending">대기 0</button>
+        <button id="tabHistory" role="tab" aria-selected="false" type="button" data-role="tab-history">이력 0</button>
       </div>
       <div id="highlightbar" data-role="highlight-bar" hidden></div>
       <div id="list" role="tabpanel" aria-label="목록" data-role="case-list"></div>
@@ -444,7 +458,8 @@
   var state = {
     cases: [], stats: null, selected: null, view: "pending", busy: false,
     tree: [], highlight: null, selectedFiles: [], drafts: {},
-    collapsedDirs: {}, collapsed: false, fileCommit: null, submitBusy: false
+    collapsedDirs: {}, collapsed: false, fileCommit: null, submitBusy: false,
+    detail: null, decbar: null
   };
 
   function esc(s) { return s === null || s === undefined ? "" : String(s); }
@@ -511,10 +526,6 @@
     var s = el("span", "status " + status, STATUS_LABEL[status] || status);
     s.setAttribute("title", STATUS_LABEL[status] || status);
     return s;
-  }
-
-  function riskText(risk) {
-    return (risk === null || risk === undefined) ? "위험 점수 없음" : ("위험 점수 " + risk);
   }
 
   function api(path, opts) {
@@ -630,29 +641,31 @@
     return Object.keys(allow).length;
   }
 
-  var CAUSE_ORDER = ["secret", "test_failed", "protected_path", "size"];
+  // spec-10: 위험 점수 숫자 + 앞 점. 점 색은 0→100 회색(#8c959f)→빨강(#d1242f) 구간 선형 보간(중간 주황)
+  function riskColor(risk) {
+    var t = Math.max(0, Math.min(100, Number(risk))) / 100;
+    var lo = [140, 149, 159], mid = [212, 167, 44], hi = [209, 36, 47];
+    var a, b, u;
+    if (t < 0.5) { a = lo; b = mid; u = t * 2; }
+    else { a = mid; b = hi; u = (t - 0.5) * 2; }
+    var c = a.map(function (v, i) { return Math.round(v + (b[i] - v) * u); });
+    return "rgb(" + c[0] + "," + c[1] + "," + c[2] + ")";
+  }
 
-  // 추가 3: 대표 멈춤 원인 1개(우선순위 secret > test_failed > protected_path > size). 2개 이상이면 "+N"
-  function repCause(reasons) {
-    var rs = reasons || [];
-    var first = null;
-    for (var i = 0; i < CAUSE_ORDER.length; i++) {
-      if (rs.indexOf(CAUSE_ORDER[i]) >= 0) { first = CAUSE_ORDER[i]; break; }
-    }
-    if (!first) {
-      for (var j = 0; j < rs.length; j++) {
-        if (SIGNAL_LABEL[rs[j]]) { first = rs[j]; break; }
-      }
-    }
-    if (!first) return null;
-    var extra = rs.length - 1;
-    var s = el("span", "cause", null);
-    s.setAttribute("title", rs.map(function (r) { return SIGNAL_LABEL[r] || r; }).join(", "));
-    var dot = el("span", "cdot " + first, null);
+  function riskCluster(c) {
+    var s = el("span", "riskn", null);
+    var r = c.risk_score;
+    if (typeof r !== "number") return s;
+    var reasons = c.stop_reasons || [];
+    s.setAttribute("title", "위험 점수 " + r +
+      (reasons.length > 0
+        ? " · " + reasons.map(function (x) { return SIGNAL_LABEL[x] || x; }).join(", ")
+        : ""));
+    var dot = el("span", "rdot", null);
     dot.setAttribute("aria-hidden", "true");
+    dot.style.background = riskColor(r);
     s.appendChild(dot);
-    s.appendChild(el("span", null,
-      (SIGNAL_LABEL[first] || first) + (extra > 0 ? " +" + extra : "")));
+    s.appendChild(el("span", null, String(r)));
     return s;
   }
 
@@ -675,8 +688,7 @@
     var title = el("span", "title", c.request);
     title.setAttribute("title", c.request);
     top.appendChild(title);
-    var cause = repCause(c.stop_reasons);
-    if (cause) top.appendChild(cause);
+    top.appendChild(riskCluster(c));
     b.appendChild(top);
     var sub = el("div", "sub", (c.agent ? c.agent + " · " : "") + filesLine(c));
     sub.setAttribute("title", (c.agent ? c.agent + " · " : "") + (c.files || []).join(", "));
@@ -704,6 +716,7 @@
     title.setAttribute("title", c.request);
     top.appendChild(title);
     top.appendChild(statusSpan(c.status));
+    top.appendChild(riskCluster(c));
     b.appendChild(top);
     var subTxt = c.agent ? c.agent : "";
     if (c.commit_sha) subTxt += (subTxt ? " · " : "") + "커밋 " + String(c.commit_sha).slice(0, 7);
@@ -741,8 +754,8 @@
   function renderList() {
     listEl.textContent = "";
     renderHighlightbar();
-    tabPending.textContent = "승인 대기 " + pendingCases().length;
-    tabHistory.textContent = "처리 이력 " + historyCases().length;
+    tabPending.textContent = "대기 " + pendingCases().length;
+    tabHistory.textContent = "이력 " + historyCases().length;
     var rows = state.view === "pending" ? pendingCases() : historyCases();
     if (rows.length === 0) {
       listEl.appendChild(el("div", "empty",
@@ -902,11 +915,15 @@
   }
 
   function renderDetailLoading() {
+    state.detail = null;
+    state.decbar = null;
     detailEl.textContent = "";
     detailEl.appendChild(el("div", "empty", "불러오는 중"));
   }
 
   function renderDetailEmpty(msg) {
+    state.detail = null;
+    state.decbar = null;
     detailEl.textContent = "";
     detailEl.appendChild(el("div", "empty", msg));
   }
@@ -1077,28 +1094,44 @@
     return bar;
   }
 
+  function kvRow(k, v) {
+    var row = el("div", "kv", null);
+    row.appendChild(el("span", "k", k));
+    row.appendChild(el("span", "v", v));
+    return row;
+  }
+
   function renderSummary(d, sections) {
-    var sec = el("section", null, null);
+    var sec = el("section", "box", null);
     sec.setAttribute("data-role", "summary");
     sec.appendChild(el("h3", null, "케이스 원인"));
-    var reasons = el("ul", "rationale", null);
+    var body = el("div", "boxbody", null);
+    var kr = el("div", "kv", null);
+    kr.appendChild(el("span", "k", "멈춘 원인"));
+    var rv = el("span", "v", null);
     if (!d.stop_reasons || d.stop_reasons.length === 0) {
-      reasons.appendChild(el("li", null, "멈춤 원인 없음 · 자동 승인"));
+      rv.textContent = "없음";
     } else {
-      (d.rationale || []).forEach(function (r) { reasons.appendChild(el("li", null, r)); });
-      if (reasons.children.length === 0) {
-        (d.stop_reasons || []).forEach(function (sig) {
-          reasons.appendChild(el("li", null, SIGNAL_LABEL[sig] || sig));
-        });
-      }
+      (d.stop_reasons || []).forEach(function (sig, i) {
+        if (i > 0) rv.appendChild(el("span", null, " "));
+        rv.appendChild(badge(sig));
+      });
     }
-    sec.appendChild(reasons);
-    sec.appendChild(el("p", null, riskText(d.risk_score)));
-    sec.appendChild(el("p", null, d.test_passed ? "테스트 통과" : "테스트 실패"));
+    kr.appendChild(rv);
+    body.appendChild(kr);
+    if (d.rationale && d.rationale.length > 0) {
+      var reasons = el("ul", "rationale muted", null);
+      d.rationale.forEach(function (r) { reasons.appendChild(el("li", null, r)); });
+      body.appendChild(reasons);
+    }
     var added = 0, removed = 0;
     sections.forEach(function (s) { added += s.added; removed += s.removed; });
-    sec.appendChild(el("p", null,
+    body.appendChild(kvRow("위험 점수",
+      (d.risk_score === null || d.risk_score === undefined) ? "없음" : String(d.risk_score)));
+    body.appendChild(kvRow("테스트", d.test_passed ? "통과" : "실패"));
+    body.appendChild(kvRow("변경 규모",
       "파일 " + (d.files || []).length + "개 · +" + added + "/-" + removed));
+    sec.appendChild(body);
     return sec;
   }
 
@@ -1222,25 +1255,41 @@
   }
 
   function renderFilesSection(d, sections) {
-    var sec = el("section", null, null);
+    var sec = el("section", "box", null);
     sec.appendChild(el("h3", null, "변경 파일"));
+    var body = el("div", "boxbody", null);
     var total = 0;
     sections.forEach(function (s) { total += s.added + s.removed; });
     var openByDefault = total <= EXPAND_LIMIT;
     var parts = renderFileTree(sec, sections, d.files || []);
-    sec.appendChild(parts.wrap);
+    body.appendChild(parts.wrap);
     renderDiffBlock(sections, d.files || [], parts.diffs, openByDefault);
+    sec.appendChild(body);
     return sec;
   }
 
   function renderDetail(d) {
     detailEl.textContent = "";
-    detailEl.appendChild(renderDecisionBar(d));
+    var bar = renderDecisionBar(d);
+    state.decbar = bar;
+    detailEl.appendChild(bar);
     var body = el("div", "detailbody", null);
     var sections = parseDiffSections(d.diff || "");
     body.appendChild(renderSummary(d, sections));
     body.appendChild(renderFilesSection(d, sections));
     detailEl.appendChild(body);
+    state.detail = d;
+  }
+
+  // spec-10: 토글 표시·해제를 결정 바에 즉시 반영. 표시 중인 건과 같은 건일 때만 동기 교체
+  function refreshDecisionBar(caseId) {
+    if (!state.detail || !state.decbar) return false;
+    if (state.detail.case_id !== caseId) return false;
+    if (state.selected !== caseId) return false;
+    var fresh = renderDecisionBar(state.detail);
+    detailEl.replaceChild(fresh, state.decbar);
+    state.decbar = fresh;
+    return true;
   }
 
   function setBusy(b) {
@@ -1263,7 +1312,7 @@
       persistDrafts();
       renderList();
       renderSubmitBtn();
-      selectCase(caseId);
+      if (!refreshDecisionBar(caseId)) selectCase(caseId);
       return;
     }
     if (kind === "reject" && (!note || note.trim() === "")) {
@@ -1278,7 +1327,7 @@
     var idx = pendingIds.indexOf(caseId);
     var next = pendingIds[idx + 1] || pendingIds[idx];
     if (next && next !== caseId) selectCase(next);
-    else selectCase(caseId);
+    else if (!refreshDecisionBar(caseId)) selectCase(caseId);
   }
 
   function openSubmitModal() {
@@ -1449,7 +1498,7 @@
     panelToggle.setAttribute("aria-label", collapsed ? "패널 펼치기" : "패널 접기");
     panelToggle.setAttribute("title", collapsed ? "패널 펼치기" : "패널 접기");
     if (collapsed) {
-      panelVLabel.textContent = "승인 대기 " + pendingCases().length;
+      panelVLabel.textContent = "대기 " + pendingCases().length;
       panelVLabel.removeAttribute("hidden");
     } else {
       panelVLabel.setAttribute("hidden", "");
