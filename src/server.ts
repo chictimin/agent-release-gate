@@ -212,12 +212,45 @@ export function lastCommitFor(
   }
 }
 
+/** rev6: pending 건 diff에서 그 경로 섹션의 상태. new/deleted file mode로 판정, 둘 다 아니면 modified */
+function sectionStatus(
+  diff: string,
+  path: string,
+): "added" | "modified" | "deleted" {
+  for (const s of diff.split("diff --git ")) {
+    const m = s.match(/^a\/(.*) b\/(.*)$/m);
+    if (!m) continue;
+    if ((m[2] ?? m[1] ?? "") !== path) continue;
+    if (/^new file mode/m.test(s)) return "added";
+    if (/^deleted file mode/m.test(s)) return "deleted";
+    return "modified";
+  }
+  return "modified";
+}
+
+/** rev6: 대기 건들이 그 경로를 새로 만드는지/지우는지. deleted가 하나라도 있으면 deleted */
+function pendingChangeFor(
+  diffs: { files: string[]; diff: string }[],
+  path: string,
+): "added" | "modified" | "deleted" | null {
+  let seen: "added" | "modified" | "deleted" | null = null;
+  for (const { files, diff } of diffs) {
+    if (!files.includes(path)) continue;
+    const st = sectionStatus(diff, path);
+    if (st === "deleted") return "deleted";
+    if (st === "added") seen = "added";
+    else if (seen === null) seen = "modified";
+  }
+  return seen;
+}
+
 /** GET /api/tree: sandbox main HEAD 추적 파일 + pending 건이 새로 만드는 파일. gate 코어는 건드리지 않는다. */
 export async function listTree(h: GateHandles): Promise<
   {
     path: string;
     exists_on_main: boolean;
     pending_cases: string[];
+    pending_change: "added" | "modified" | "deleted" | null;
     history_cases: string[];
     last_commit: { sha: string; subject: string; date: string } | null;
   }[]
@@ -234,8 +267,13 @@ export async function listTree(h: GateHandles): Promise<
   const onMain = new Set(tracked);
   const pendingFiles = new Map<string, string[]>();
   const historyFiles = new Map<string, { id: string; at: string }[]>();
+  const pendingDiffs: { files: string[]; diff: string }[] = [];
   for (const s of await listEnrichedSummaries(h)) {
     if (s.status === "not_run") continue;
+    if (s.status === "pending") {
+      const d = await getDetail(h, s.case_id);
+      if (d) pendingDiffs.push({ files: d.files, diff: d.diff });
+    }
     for (const f of s.files) {
       if (s.status === "pending") {
         const arr = pendingFiles.get(f) ?? [];
@@ -260,6 +298,9 @@ export async function listTree(h: GateHandles): Promise<
     path,
     exists_on_main: onMain.has(path),
     pending_cases: pendingFiles.get(path) ?? [],
+    pending_change: pendingFiles.has(path)
+      ? pendingChangeFor(pendingDiffs, path)
+      : null,
     history_cases: (historyFiles.get(path) ?? []).map((e) => e.id),
     last_commit: onMain.has(path) ? lastCommitFor(h, path) : null,
   }));

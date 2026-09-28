@@ -30,7 +30,7 @@
   }
   header h1 { font-size: 16px; margin: 0 4px 0 0; font-weight: 600; }
   .branch {
-    font-size: 12px; font-family: var(--mono); color: var(--fg);
+    font-size: 11px; font-family: var(--mono); color: var(--fg);
     border: 1px solid var(--border); border-radius: 2em;
     background: var(--bg); padding: 0 8px;
   }
@@ -109,7 +109,7 @@
     flex: 1 1 auto; min-width: 0;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  #highlightbar .hpath b { font-family: var(--mono); font-weight: 600; color: var(--fg); }
+  #highlightbar .hpath b { font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--fg); }
   #list { flex: 1 1 auto; overflow-y: auto; min-height: 0; padding-bottom: 8px; }
   .case {
     display: block; width: 100%; text-align: left; font-size: 13px;
@@ -120,7 +120,7 @@
   .case[aria-current="true"] { background: #ddf4ff; border-left: 4px solid var(--accent); padding-left: 12px; }
   .case[data-highlight="true"] { background: #fff8c5; }
   .case[data-highlight="true"][aria-current="true"] { background: #ddf4ff; }
-  .case .cid { font-family: var(--mono); font-size: 12px; color: var(--accent); }
+  .case .cid { font-family: var(--mono); font-size: 11px; color: var(--accent); }
   .case .topline, .histrow .topline {
     display: flex; gap: 8px; align-items: baseline; min-width: 0;
   }
@@ -143,7 +143,7 @@
   .cdot.protected_path { background: #d2a8ff; }
   .cdot.size { background: #d4a72c; }
   .case .sub, .histrow .sub {
-    margin-top: 4px; font-size: 12px; color: var(--muted);
+    margin-top: 4px; font-size: 11px; color: var(--muted);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     font-family: var(--mono);
   }
@@ -183,24 +183,22 @@
     display: block; width: 100%; text-align: left;
     background: transparent; color: var(--fg); border: none; border-radius: 6px;
     padding: 4px 8px; cursor: pointer; font-size: 13px;
+    white-space: nowrap; overflow: hidden;
   }
   .tfile:hover { background: var(--canvas); }
   .tfile[aria-current="true"] { background: #ddf4ff; }
   .tfile[data-highlight="true"] { background: #fff8c5; }
   .tfile[data-highlight="true"][aria-current="true"] { background: #ddf4ff; }
-  .tfile .trow1 { display: flex; gap: 8px; align-items: center; font-family: var(--mono); }
+  .tfile .trow1 { display: flex; gap: 8px; align-items: center; font-family: var(--mono); font-size: 12px; }
   .tfile svg { flex: 0 0 auto; color: var(--muted); }
   .tfile .tname { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .newfile {
-    font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-    color: var(--ok); border: 1px solid #4ac26b; border-radius: 2em; padding: 0 8px; white-space: nowrap;
-  }
-  .pcase {
+  .tfile .st-add { color: var(--ok); }
+  .tfile .st-del { color: var(--danger); }
+  .pcount {
     display: inline-flex; gap: 4px; align-items: center;
-    font-size: 11px; color: var(--warn); white-space: nowrap;
-    border: 1px solid #d4a72c; background: #fff8c5; border-radius: 2em; padding: 0 8px;
+    font-size: 11px; color: var(--warn); white-space: nowrap; margin-left: auto;
   }
-  .pcase .dot { width: 7px; height: 7px; border-radius: 50%; background: #d4a72c; display: inline-block; }
+  .pcount .dot { width: 7px; height: 7px; border-radius: 50%; background: #d4a72c; display: inline-block; }
   .hdot {
     display: inline-block; width: 8px; height: 8px; border-radius: 50%;
     background: #8c959f; flex: 0 0 auto;
@@ -213,9 +211,9 @@
     padding: 12px 16px;
   }
   .decbar-top { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
-  .decbar-top h2 { font-size: 15px; margin: 0; font-family: var(--mono); font-weight: 600; }
+  .decbar-top h2 { font-size: 14px; margin: 0; font-family: var(--mono); font-weight: 600; }
   .decbar .metaline {
-    flex: 1 1 100%; margin: 0; font-size: 12px; color: var(--muted);
+    flex: 1 1 100%; margin: 0; font-size: 11px; color: var(--muted);
     font-family: var(--mono);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
@@ -225,9 +223,9 @@
   }
   .decbar .eff { color: var(--muted); font-size: 12px; }
   .decbar .lastcommit { margin: 4px 0 0; font-size: 12px; color: var(--muted); }
-  .decbar .lastcommit .sha { font-family: var(--mono); }
+  .decbar .lastcommit .sha { font-family: var(--mono); font-size: 11px; }
   .commitmsg {
-    margin: 8px 0 0; font-family: var(--mono); font-size: 12px;
+    margin: 8px 0 0; font-family: var(--mono); font-size: 11px;
     border: 1px solid var(--border); border-radius: 6px; background: var(--canvas);
     padding: 8px 12px; white-space: pre-wrap; overflow-wrap: break-word;
   }
@@ -244,7 +242,7 @@
   #draftline { margin-top: 8px; font-size: 13px; color: var(--muted); }
   #draftline:empty { display: none; }
   .decided { margin-top: 8px; font-size: 13px; color: var(--muted); }
-  .decided .sha { font-family: var(--mono); font-size: 12px; }
+  .decided .sha { font-family: var(--mono); font-size: 11px; }
   .detailbody { padding: 4px 16px 16px; }
   .detailbody section { margin: 12px 0; }
   .detailbody h3 { font-size: 12px; color: var(--muted); font-weight: 600; margin: 0 0 8px; }
@@ -253,12 +251,12 @@
   .filewrap { display: flex; gap: 16px; align-items: flex-start; }
   .tree { flex: 0 0 220px; min-width: 0; font-size: 12px; }
   .tree details { margin-bottom: 4px; }
-  .tree summary { cursor: pointer; color: var(--muted); font-family: var(--mono); list-style: none; }
+  .tree summary { cursor: pointer; color: var(--muted); font-family: var(--mono); font-size: 11px; list-style: none; }
   .tree summary::-webkit-details-marker { display: none; }
   .tree ul { list-style: none; margin: 4px 0; padding-left: 12px; }
   .tree li { margin: 4px 0; }
   .tree button {
-    display: block; width: 100%; text-align: left; font-size: 12px;
+    display: block; width: 100%; text-align: left; font-size: 11px;
     background: transparent; color: var(--fg); border: none; border-radius: 6px;
     padding: 4px 8px; cursor: pointer; font-family: var(--mono);
     overflow-wrap: break-word;
@@ -269,7 +267,7 @@
   .diffs { flex: 1 1 auto; min-width: 0; }
   details.filediff { margin-bottom: 16px; border: 1px solid var(--border); border-radius: 6px; }
   details.filediff > summary {
-    cursor: pointer; padding: 8px 12px; font-family: var(--mono); font-size: 12px;
+    cursor: pointer; padding: 8px 12px; font-family: var(--mono); font-size: 11px;
     display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center;
     background: var(--canvas); border-radius: 6px; list-style: none;
   }
@@ -287,7 +285,7 @@
   .db .cell.r { background: #f85149; border-color: #f85149; }
   table.difftable { border-collapse: collapse; width: 100%; }
   pre.diff {
-    font-family: var(--mono); font-size: 12px; line-height: 1.6;
+    font-family: var(--mono); font-size: 11px; line-height: 1.6;
     background: var(--bg); margin: 0; padding: 0; overflow-x: auto;
   }
   table.difftable td { padding: 0 12px; vertical-align: top; white-space: pre; }
@@ -312,8 +310,8 @@
   .histrow[data-highlight="true"][aria-current="true"] { background: #ddf4ff; }
   .histrow .topline { flex: 1 1 100%; }
   .histrow .sub { flex: 1 1 100%; }
-  .histrow .cid { font-family: var(--mono); font-size: 12px; color: var(--accent); }
-  .histrow .sha { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .histrow .cid { font-family: var(--mono); font-size: 11px; color: var(--accent); }
+  .histrow .sha { font-family: var(--mono); font-size: 11px; color: var(--muted); }
   .status { font-weight: 600; }
   .status.pending { color: var(--warn); }
   .status.auto_applied { color: var(--ok); }
@@ -336,7 +334,7 @@
   .submitmodal .mbody { padding: 8px 16px; overflow-y: auto; }
   .submitmodal .mbody h3 { font-size: 13px; color: var(--muted); margin: 12px 0 4px; }
   .submitmodal .mitem { font-size: 13px; margin: 4px 0; overflow-wrap: break-word; }
-  .submitmodal .mitem .cid { font-family: var(--mono); font-size: 12px; color: var(--accent); }
+  .submitmodal .mitem .cid { font-family: var(--mono); font-size: 11px; color: var(--accent); }
   .submitmodal .mitem .cmeta { color: var(--muted); font-size: 12px; }
   .submitmodal .warn { font-size: 13px; font-weight: 600; margin: 12px 0 0; }
   .submitmodal .mfoot { display: flex; gap: 8px; justify-content: flex-end; padding: 12px 16px 16px; }
@@ -358,7 +356,7 @@
   <div class="stats" id="stats" aria-live="polite"></div>
   <div id="headActions">
     <button id="submitBtn" class="btn btn-primary" type="button" data-role="submit-decisions" aria-label="결정 제출" disabled>결정 제출 (0)</button>
-    <button id="runAll" class="btn" type="button" aria-label="새 산출물 가져오기"></button>
+    <button id="runAll" class="btn" type="button" aria-label="새 변경 불러오기"></button>
   </div>
 </header>
 <div class="layout">
@@ -399,6 +397,8 @@
     sidebarCollapse: ["M6.823 7.823a.25.25 0 0 1 0 .354l-2.396 2.396A.25.25 0 0 1 4 10.396V5.604a.25.25 0 0 1 .427-.177Z", "M1.75 0h12.5C15.216 0 16 .784 16 1.75v12.5A1.75 1.75 0 0 1 14.25 16H1.75A1.75 1.75 0 0 1 0 14.25V1.75C0 .784.784 0 1.75 0ZM1.5 1.75v12.5c0 .138.112.25.25.25H9.5v-13H1.75a.25.25 0 0 0-.25.25ZM11 14.5h3.25a.25.25 0 0 0 .25-.25V1.75a.25.25 0 0 0-.25-.25H11Z"],
     sidebarExpand: ["m4.177 7.823 2.396-2.396A.25.25 0 0 1 7 5.604v4.792a.25.25 0 0 1-.427.177L4.177 8.177a.25.25 0 0 1 0-.354Z", "M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v12.5A1.75 1.75 0 0 1 14.25 16H1.75A1.75 1.75 0 0 1 0 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25H9.5v-13Zm12.5 13a.25.25 0 0 0 .25-.25V1.75a.25.25 0 0 0-.25-.25H11v13Z"],
     sync: ["M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z"],
+    diffAdded: ["M2.75 1h10.5c.966 0 1.75.784 1.75 1.75v10.5A1.75 1.75 0 0 1 13.25 15H2.75A1.75 1.75 0 0 1 1 13.25V2.75C1 1.784 1.784 1 2.75 1Zm10.5 1.5H2.75a.25.25 0 0 0-.25.25v10.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25V2.75a.25.25 0 0 0-.25-.25ZM8 4a.75.75 0 0 1 .75.75v2.5h2.5a.75.75 0 0 1 0 1.5h-2.5v2.5a.75.75 0 0 1-1.5 0v-2.5h-2.5a.75.75 0 0 1 0-1.5h2.5v-2.5A.75.75 0 0 1 8 4Z"],
+    diffRemoved: ["M13.25 1c.966 0 1.75.784 1.75 1.75v10.5A1.75 1.75 0 0 1 13.25 15H2.75A1.75 1.75 0 0 1 1 13.25V2.75C1 1.784 1.784 1 2.75 1ZM2.75 2.5a.25.25 0 0 0-.25.25v10.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25V2.75a.25.25 0 0 0-.25-.25Zm8.5 6.25h-6.5a.75.75 0 0 1 0-1.5h6.5a.75.75 0 0 1 0 1.5Z"],
     xCircle: ["M2.344 2.343h-.001a8 8 0 0 1 11.314 11.314A8.002 8.002 0 0 1 .234 10.089a8 8 0 0 1 2.11-7.746Zm1.06 10.253a6.5 6.5 0 1 0 9.108-9.275 6.5 6.5 0 0 0-9.108 9.275ZM6.03 4.97 8 6.94l1.97-1.97a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l1.97 1.97a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-1.97 1.97a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734L6.94 8 4.97 6.03a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018Z"]
   };
 
@@ -425,7 +425,7 @@
   var DRAFT_KEY = "gate-drafts-v1";
   var PANEL_KEY = "gate-panel-v1";
   var RUNALL_DESC = "아직 검사하지 않은 에이전트 변경을 불러옵니다. 멈춤 원인이 없으면 자동 승인, 있으면 승인 대기로 들어갑니다";
-  var RUNALL_EMPTY = "가져올 새 산출물이 없습니다";
+  var RUNALL_EMPTY = "불러올 새 변경이 없습니다";
 
   var listEl = document.getElementById("list");
   var detailEl = document.getElementById("detail");
@@ -784,6 +784,21 @@
     renderTreeNode(wtreeEl, root, "");
   }
 
+  // spec-9: 새 파일은 초록 +, 삭제될 파일은 빨간 −. 둘 다 아니면 파일 아이콘
+  function fileStatusIcon(f) {
+    var deleted = f.pending_change === "deleted";
+    var added = !f.exists_on_main || f.pending_change === "added";
+    var ic = icon(deleted ? "diffRemoved" : (added ? "diffAdded" : "file"));
+    if (deleted || added) {
+      var label = deleted ? "삭제될 파일" : "새 파일";
+      ic.setAttribute("title", label);
+      ic.setAttribute("aria-label", label);
+      ic.removeAttribute("aria-hidden");
+      ic.setAttribute("class", deleted ? "st-del" : "st-add");
+    }
+    return ic;
+  }
+
   function renderTreeNode(container, node, prefix) {
     var dirNames = Object.keys(node.dirs).sort();
     dirNames.forEach(function (name) {
@@ -823,13 +838,12 @@
       b.setAttribute("aria-current", state.selectedFiles.indexOf(f.path) >= 0 ? "true" : "false");
       if (state.highlight === f.path) b.setAttribute("data-highlight", "true");
       var row1 = el("span", "trow1", null);
-      row1.appendChild(icon("file"));
+      row1.appendChild(fileStatusIcon(f));
       var shortName = f.path.slice(f.path.lastIndexOf("/") + 1);
       row1.appendChild(el("span", "tname", shortName));
-      if (!f.exists_on_main) row1.appendChild(el("span", "newfile", "새 파일"));
       if (f.pending_cases && f.pending_cases.length > 0) {
-        var pb = el("span", "pcase", null);
-        pb.setAttribute("title", f.pending_cases.join(", "));
+        var pb = el("span", "pcount", null);
+        pb.setAttribute("title", "승인 대기 " + f.pending_cases.length + "건");
         var dot = el("span", "dot", null);
         dot.setAttribute("aria-hidden", "true");
         pb.appendChild(dot);
@@ -1475,7 +1489,7 @@
   }
 
   runAllBtn.appendChild(icon("sync"));
-  runAllBtn.appendChild(el("span", null, "새 산출물 가져오기"));
+  runAllBtn.appendChild(el("span", null, "새 변경 불러오기"));
   runAllBtn.addEventListener("click", function () {
     setBusy(true);
     api("/api/run-all", { method: "POST" }).then(function (s) {

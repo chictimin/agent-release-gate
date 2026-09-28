@@ -70,7 +70,7 @@ pnpm batch resume <case_id> approve|reject [note]
 
 | 메서드·경로 | 응답 |
 |---|---|
-| `GET /api/cases` | 200, 전체 14건 요약(`case_id` 오름차순). 항목: `case_id`, `request`, `status`(`not_run`/`pending`/`auto_applied`/`approved_applied`/`rejected`), `stop_reasons`, `risk_score`(`not_run`이면 `null`) |
+| `GET /api/cases` | 200, 전체 14건 요약(`created_at` 오름차순). 항목: `case_id`, `request`, `status`(`not_run`/`pending`/`auto_applied`/`approved_applied`/`rejected`), `stop_reasons`, `risk_score`(`not_run`이면 `null`) |
 | `GET /api/cases/:id` | 200 상세. 요약 항목에 `diff`, `files`, `lines_changed`, `test_passed`, `rationale`, `effect_on_approve`, `decision`, `reviewer_note`, `commit_sha` 추가. 모르는 id면 404 |
 | `GET /api/stats` | 200, `auto`·`pending`·`approved`·`rejected`·`not_run` 수와 `sandbox_commits` |
 | `POST /api/run-all` | 200, 아직 실행 안 된 건만 일괄 실행하고 통계 돌려줌 |
@@ -93,7 +93,7 @@ src/gate/        게이트 코어
   graph.ts       그래프 조립 (intake → generate → verify → review → route → apply/human_gate → record_reject)
   state.ts       그래프 상태 정의
   checks.ts      diff 파싱·신호 계산 (순수 함수)
-  rules.ts       임계값·보호 경로·비밀 패턴·위험 가중치 상수
+  rules.ts       임계값·신호 판정(변경량 많음·핵심 설정 파일·키 노출 의심·테스트 실패)·위험 가중치 상수
   sources.ts     케이스 제공 경계 (FixtureSource)
   appliers.ts    저장소 반영 경계 (SandboxApplier)
 src/server.ts    웹 서버 (작성 중)
