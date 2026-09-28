@@ -32,15 +32,15 @@
   .branch {
     font-size: 12px; font-family: var(--mono); color: var(--fg);
     border: 1px solid var(--border); border-radius: 2em;
-    background: var(--bg); padding: 1px 10px;
+    background: var(--bg); padding: 0 8px;
   }
-  .stats { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--muted); }
+  .stats { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; color: var(--muted); }
   .stats b { color: var(--fg); font-variant-numeric: tabular-nums; }
   .btn {
-    font-size: 14px; font-weight: 500; padding: 5px 16px; min-height: 32px;
+    font-size: 14px; font-weight: 500; padding: 4px 16px; min-height: 32px;
     background: var(--canvas); color: var(--fg);
     border: 1px solid var(--border); border-radius: 6px; cursor: pointer;
-    display: inline-flex; align-items: center; gap: 6px;
+    display: inline-flex; align-items: center; gap: 8px;
   }
   .btn:hover { background: #eef1f4; }
   .btn:disabled { opacity: 0.5; cursor: default; }
@@ -66,7 +66,7 @@
     display: flex; flex-direction: column;
   }
   .lnbhead {
-    padding: 10px 16px; font-size: 12px; font-weight: 600; color: var(--muted);
+    padding: 12px 16px; font-size: 12px; font-weight: 600; color: var(--muted);
     border-bottom: 1px solid var(--border); flex: 0 0 auto;
   }
   /* 케이스 패널: 가로 접기 */
@@ -90,9 +90,9 @@
   }
   #panel[data-collapsed="true"] #panelVLabel { display: block; }
   #panelVLabel[hidden] { display: none; }
-  #tabs { display: flex; gap: 4px; padding: 10px 12px 8px; flex: 0 0 auto; }
+  #tabs { display: flex; gap: 4px; padding: 12px 12px 8px; flex: 0 0 auto; }
   #tabs button {
-    flex: 1 1 auto; font-size: 13px; padding: 5px 8px;
+    flex: 1 1 auto; font-size: 13px; padding: 4px 8px;
     background: transparent; color: var(--muted);
     border: 1px solid var(--border); border-radius: 6px; cursor: pointer;
   }
@@ -101,7 +101,7 @@
     border-color: var(--border);
   }
   #highlightbar {
-    display: flex; gap: 6px; align-items: center; margin: 0 12px 8px;
+    display: flex; gap: 8px; align-items: center; margin: 0 12px 8px;
     font-size: 12px; color: var(--muted); flex: 0 0 auto;
   }
   #highlightbar[hidden] { display: none; }
@@ -117,7 +117,7 @@
     border-bottom: 1px solid var(--border); padding: 8px 16px; cursor: pointer;
   }
   .case:hover { background: var(--canvas); }
-  .case[aria-current="true"] { background: #ddf4ff; border-left: 3px solid var(--accent); padding-left: 13px; }
+  .case[aria-current="true"] { background: #ddf4ff; border-left: 4px solid var(--accent); padding-left: 12px; }
   .case[data-highlight="true"] { background: #fff8c5; }
   .case[data-highlight="true"][aria-current="true"] { background: #ddf4ff; }
   .case .cid { font-family: var(--mono); font-size: 12px; color: var(--accent); }
@@ -143,7 +143,7 @@
   .cdot.protected_path { background: #d2a8ff; }
   .cdot.size { background: #d4a72c; }
   .case .sub, .histrow .sub {
-    margin-top: 2px; font-size: 12px; color: var(--muted);
+    margin-top: 4px; font-size: 12px; color: var(--muted);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     font-family: var(--mono);
   }
@@ -153,7 +153,8 @@
   .case .meta { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 12px; color: var(--muted); }
   .badge {
     display: inline-block; font-size: 11px; font-weight: 500;
-    border: 1px solid var(--border); border-radius: 2em; padding: 1px 8px; white-space: nowrap;
+    border: 1px solid var(--border); border-radius: 2em; padding: 0 8px; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; max-width: 100%;
     background: var(--canvas); color: var(--fg);
   }
   .badge.size { background: #fff8c5; border-color: #d4a72c; color: #7d4e00; }
@@ -172,36 +173,32 @@
   #wtree { padding: 8px; font-size: 13px; }
   .tdir { margin: 0; }
   .dirsum {
-    display: flex; width: 100%; gap: 6px; align-items: center; text-align: left;
-    cursor: pointer; padding: 4px 6px; border: none; border-radius: 6px;
+    display: flex; width: 100%; gap: 8px; align-items: center; text-align: left;
+    cursor: pointer; padding: 4px 8px; border: none; border-radius: 6px;
     background: transparent; color: var(--fg); font-weight: 600; font-size: 13px;
   }
   .dirsum:hover { background: var(--canvas); }
-  .tinner { padding-left: 18px; }
+  .tinner { padding-left: 16px; }
   .tfile {
     display: block; width: 100%; text-align: left;
     background: transparent; color: var(--fg); border: none; border-radius: 6px;
-    padding: 4px 6px; cursor: pointer; font-size: 13px;
+    padding: 4px 8px; cursor: pointer; font-size: 13px;
   }
   .tfile:hover { background: var(--canvas); }
   .tfile[aria-current="true"] { background: #ddf4ff; }
   .tfile[data-highlight="true"] { background: #fff8c5; }
   .tfile[data-highlight="true"][aria-current="true"] { background: #ddf4ff; }
-  .tfile .trow1 { display: flex; gap: 6px; align-items: center; font-family: var(--mono); }
+  .tfile .trow1 { display: flex; gap: 8px; align-items: center; font-family: var(--mono); }
   .tfile svg { flex: 0 0 auto; color: var(--muted); }
   .tfile .tname { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .tfile .tlast {
-    margin: 2px 0 0 22px; font-size: 12px; color: var(--muted);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
   .newfile {
     font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-    color: var(--ok); border: 1px solid #4ac26b; border-radius: 2em; padding: 0 6px; white-space: nowrap;
+    color: var(--ok); border: 1px solid #4ac26b; border-radius: 2em; padding: 0 8px; white-space: nowrap;
   }
   .pcase {
-    display: inline-flex; gap: 3px; align-items: center;
+    display: inline-flex; gap: 4px; align-items: center;
     font-size: 11px; color: var(--warn); white-space: nowrap;
-    border: 1px solid #d4a72c; background: #fff8c5; border-radius: 2em; padding: 0 6px;
+    border: 1px solid #d4a72c; background: #fff8c5; border-radius: 2em; padding: 0 8px;
   }
   .pcase .dot { width: 7px; height: 7px; border-radius: 50%; background: #d4a72c; display: inline-block; }
   .hdot {
@@ -215,7 +212,7 @@
     background: var(--bg); border-bottom: 1px solid var(--border);
     padding: 12px 16px;
   }
-  .decbar-top { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
+  .decbar-top { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
   .decbar-top h2 { font-size: 15px; margin: 0; font-family: var(--mono); font-weight: 600; }
   .decbar .metaline {
     flex: 1 1 100%; margin: 0; font-size: 12px; color: var(--muted);
@@ -232,13 +229,13 @@
   .commitmsg {
     margin: 8px 0 0; font-family: var(--mono); font-size: 12px;
     border: 1px solid var(--border); border-radius: 6px; background: var(--canvas);
-    padding: 8px 10px; white-space: pre-wrap; overflow-wrap: break-word;
+    padding: 8px 12px; white-space: pre-wrap; overflow-wrap: break-word;
   }
   .commitmsg .cmlabel { display: block; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
   .commitmsg .cmfirst { display: block; font-weight: 600; }
   .actrow { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
   #note {
-    flex: 1 1 auto; min-width: 0; font-size: 14px; padding: 5px 12px; min-height: 32px;
+    flex: 1 1 auto; min-width: 0; font-size: 14px; padding: 4px 12px; min-height: 32px;
     border-radius: 6px; border: 1px solid var(--border);
     background: var(--bg); color: var(--fg);
   }
@@ -252,18 +249,18 @@
   .detailbody section { margin: 12px 0; }
   .detailbody h3 { font-size: 12px; color: var(--muted); font-weight: 600; margin: 0 0 8px; }
   .detailbody p { margin: 0 0 4px; overflow-wrap: break-word; }
-  ul.rationale { margin: 0; padding-left: 20px; }
+  ul.rationale { margin: 0; padding-left: 16px; }
   .filewrap { display: flex; gap: 16px; align-items: flex-start; }
   .tree { flex: 0 0 220px; min-width: 0; font-size: 12px; }
   .tree details { margin-bottom: 4px; }
   .tree summary { cursor: pointer; color: var(--muted); font-family: var(--mono); list-style: none; }
   .tree summary::-webkit-details-marker { display: none; }
   .tree ul { list-style: none; margin: 4px 0; padding-left: 12px; }
-  .tree li { margin: 2px 0; }
+  .tree li { margin: 4px 0; }
   .tree button {
     display: block; width: 100%; text-align: left; font-size: 12px;
     background: transparent; color: var(--fg); border: none; border-radius: 6px;
-    padding: 4px 6px; cursor: pointer; font-family: var(--mono);
+    padding: 4px 8px; cursor: pointer; font-family: var(--mono);
     overflow-wrap: break-word;
   }
   .tree button:hover { background: var(--canvas); }
@@ -272,7 +269,7 @@
   .diffs { flex: 1 1 auto; min-width: 0; }
   details.filediff { margin-bottom: 16px; border: 1px solid var(--border); border-radius: 6px; }
   details.filediff > summary {
-    cursor: pointer; padding: 8px 10px; font-family: var(--mono); font-size: 12px;
+    cursor: pointer; padding: 8px 12px; font-family: var(--mono); font-size: 12px;
     display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center;
     background: var(--canvas); border-radius: 6px; list-style: none;
   }
@@ -284,7 +281,7 @@
   .pm { font-variant-numeric: tabular-nums; white-space: nowrap; }
   .pm .p { color: var(--ok); }
   .pm .m { color: var(--danger); }
-  .db { display: inline-flex; gap: 1px; }
+  .db { display: inline-flex; gap: 0; }
   .db .cell { display: inline-block; width: 8px; height: 8px; border: 1px solid var(--border); background: #eaeef2; }
   .db .cell.g { background: #2da44e; border-color: #2da44e; }
   .db .cell.r { background: #f85149; border-color: #f85149; }
@@ -293,7 +290,7 @@
     font-family: var(--mono); font-size: 12px; line-height: 1.6;
     background: var(--bg); margin: 0; padding: 0; overflow-x: auto;
   }
-  table.difftable td { padding: 0 10px; vertical-align: top; white-space: pre; }
+  table.difftable td { padding: 0 12px; vertical-align: top; white-space: pre; }
   table.difftable td.ln {
     width: 1%; min-width: 40px; text-align: right; color: var(--muted);
     background: var(--bg); user-select: none;
@@ -310,7 +307,7 @@
     font-size: 13px; background: transparent; color: var(--fg); cursor: pointer;
   }
   .histrow:hover { background: var(--canvas); }
-  .histrow[aria-current="true"] { background: #ddf4ff; border-left: 3px solid var(--accent); padding-left: 13px; }
+  .histrow[aria-current="true"] { background: #ddf4ff; border-left: 4px solid var(--accent); padding-left: 12px; }
   .histrow[data-highlight="true"] { background: #fff8c5; }
   .histrow[data-highlight="true"][aria-current="true"] { background: #ddf4ff; }
   .histrow .topline { flex: 1 1 100%; }
@@ -372,7 +369,7 @@
   <section id="panel" data-role="case-panel" data-collapsed="false" aria-label="케이스 패널">
     <div id="panelMain">
       <div id="tabs" role="tablist" aria-label="보기 전환">
-        <button id="tabPending" role="tab" aria-selected="true" type="button" data-role="tab-pending">대기 0</button>
+        <button id="tabPending" role="tab" aria-selected="true" type="button" data-role="tab-pending">승인 대기 0</button>
         <button id="tabHistory" role="tab" aria-selected="false" type="button" data-role="tab-history">처리 이력 0</button>
       </div>
       <div id="highlightbar" data-role="highlight-bar" hidden></div>
@@ -406,17 +403,17 @@
   };
 
   var SIGNAL_LABEL = {
-    size: "크기 초과",
-    protected_path: "보호 경로",
-    secret: "비밀 의심",
+    size: "변경량 많음",
+    protected_path: "핵심 설정 파일",
+    secret: "키 노출 의심",
     test_failed: "테스트 실패"
   };
   var STATUS_LABEL = {
-    pending: "대기",
+    pending: "승인 대기",
     auto_applied: "자동 승인",
     approved_applied: "승인 반영",
     rejected: "반려",
-    not_run: "미실행"
+    not_run: "검사 전"
   };
   var FILE_STATUS_LABEL = {
     added: "새 파일",
@@ -427,7 +424,7 @@
   var EXPAND_LIMIT = 40;
   var DRAFT_KEY = "gate-drafts-v1";
   var PANEL_KEY = "gate-panel-v1";
-  var RUNALL_DESC = "아직 게이트를 거치지 않은 에이전트 산출물을 게이트에 넣습니다. 멈춤 신호가 없으면 자동 반영, 있으면 대기로 들어갑니다";
+  var RUNALL_DESC = "아직 검사하지 않은 에이전트 변경을 불러옵니다. 멈춤 원인이 없으면 자동 승인, 있으면 승인 대기로 들어갑니다";
   var RUNALL_EMPTY = "가져올 새 산출물이 없습니다";
 
   var listEl = document.getElementById("list");
@@ -510,13 +507,10 @@
     return b;
   }
 
-  function draftChip(kind) {
-    var label = kind === "approve" ? "승인 예정" : "반려 예정";
-    return el("span", "badge draft-" + kind, label);
-  }
-
   function statusSpan(status) {
-    return el("span", "status " + status, STATUS_LABEL[status] || status);
+    var s = el("span", "status " + status, STATUS_LABEL[status] || status);
+    s.setAttribute("title", STATUS_LABEL[status] || status);
+    return s;
   }
 
   function riskText(risk) {
@@ -527,7 +521,7 @@
     return fetch(path, opts).then(function (res) {
       return res.json().then(function (body) {
         if (!res.ok) {
-          var err = new Error((body && body.error) || ("요청 실패 (상태 " + res.status + ")"));
+          var err = new Error((body && body.error) || ("서버 요청에 실패했습니다 (HTTP " + res.status + ")"));
           err.status = res.status;
           throw err;
         }
@@ -544,8 +538,8 @@
     var s = state.stats;
     if (!s) { statsEl.appendChild(el("span", null, "통계 불러오는 중")); return; }
     var items = [
-      ["자동 승인", s.auto], ["대기", s.pending], ["승인 반영", s.approved],
-      ["반려", s.rejected], ["미실행", s.not_run], ["커밋", s.sandbox_commits]
+      ["자동 승인", s.auto], ["승인 대기", s.pending], ["승인 반영", s.approved],
+      ["반려", s.rejected], ["검사 전", s.not_run], ["커밋", s.sandbox_commits]
     ];
     items.forEach(function (pair, i) {
       if (i > 0) statsEl.appendChild(el("span", null, "·"));
@@ -747,12 +741,12 @@
   function renderList() {
     listEl.textContent = "";
     renderHighlightbar();
-    tabPending.textContent = "대기 " + pendingCases().length;
+    tabPending.textContent = "승인 대기 " + pendingCases().length;
     tabHistory.textContent = "처리 이력 " + historyCases().length;
     var rows = state.view === "pending" ? pendingCases() : historyCases();
     if (rows.length === 0) {
       listEl.appendChild(el("div", "empty",
-        state.view === "pending" ? "대기 중인 건이 없습니다" : "처리된 건이 없습니다"));
+        state.view === "pending" ? "승인 대기 중인 건이 없습니다" : "처리된 건이 없습니다"));
       return;
     }
     rows.forEach(function (c) {
@@ -848,12 +842,6 @@
         row1.appendChild(hd);
       }
       b.appendChild(row1);
-      if (f.last_commit && f.last_commit.subject) {
-        var lc = el("span", "tlast", f.last_commit.subject);
-        lc.setAttribute("data-role", "tree-last-commit");
-        lc.setAttribute("title", lastCommitTitle(f.last_commit));
-        b.appendChild(lc);
-      }
       (function (entry) {
         b.addEventListener("click", function () { selectFile(entry); });
       })(f);
@@ -890,7 +878,7 @@
       state.selectedFiles = [];
       renderList();
       renderWorkspaceTree();
-      renderDetailEmpty("이 파일에 걸린 건이 없습니다");
+      renderDetailEmpty("이 파일과 관련된 변경이 없습니다");
     }
   }
 
@@ -1046,7 +1034,7 @@
       var errDiv = el("div", null, null);
       errDiv.id = "err";
       bar.appendChild(errDiv);
-      var draftLine = el("div", null, draft ? (draft.kind === "approve" ? "승인 예정으로 표시됨 — 다시 누르면 해제됩니다" : "반려 예정으로 표시됨 — 다시 누르면 해제됩니다") : "");
+      var draftLine = el("div", null, draft ? (draft.kind === "approve" ? "승인 예정 · 다시 누르면 취소" : "반려 예정 · 다시 누르면 취소") : "");
       draftLine.id = "draftline";
       bar.appendChild(draftLine);
       ok.addEventListener("click", function () {
@@ -1081,7 +1069,7 @@
     sec.appendChild(el("h3", null, "케이스 원인"));
     var reasons = el("ul", "rationale", null);
     if (!d.stop_reasons || d.stop_reasons.length === 0) {
-      reasons.appendChild(el("li", null, "멈추지 않음 (자동 승인 대상)"));
+      reasons.appendChild(el("li", null, "멈춤 원인 없음 · 자동 승인"));
     } else {
       (d.rationale || []).forEach(function (r) { reasons.appendChild(el("li", null, r)); });
       if (reasons.children.length === 0) {
@@ -1265,7 +1253,7 @@
       return;
     }
     if (kind === "reject" && (!note || note.trim() === "")) {
-      showError("반려 표시에는 사유가 필요합니다. 사유를 입력한 뒤 다시 눌러주세요");
+      showError("반려하려면 사유를 입력해 주세요");
       return;
     }
     state.drafts[caseId] = { kind: kind, note: kind === "reject" ? note : (note || "") };
@@ -1388,7 +1376,7 @@
       else if (np.length > 0) selectCase(np[0]);
       else {
         state.selected = null;
-        renderDetailEmpty("대기 중인 건이 없습니다");
+        renderDetailEmpty("승인 대기 중인 건이 없습니다");
       }
     }).then(function () {
       state.submitBusy = false;
@@ -1447,7 +1435,7 @@
     panelToggle.setAttribute("aria-label", collapsed ? "패널 펼치기" : "패널 접기");
     panelToggle.setAttribute("title", collapsed ? "패널 펼치기" : "패널 접기");
     if (collapsed) {
-      panelVLabel.textContent = "대기 " + pendingCases().length;
+      panelVLabel.textContent = "승인 대기 " + pendingCases().length;
       panelVLabel.removeAttribute("hidden");
     } else {
       panelVLabel.setAttribute("hidden", "");

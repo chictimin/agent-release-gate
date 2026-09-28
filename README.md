@@ -24,25 +24,25 @@ pnpm serve
 3. `pnpm batch` — 14건 fixture를 차례로 실행한다.
    멈춘 건은 interrupt 상태로 둔 채 다음 건으로 넘어간다.
    출력 예 (별도 clone에서 실행한 실제 출력):
-   ```
-   case_id | expected | actual | stop_reasons | risk | final_status | commit_sha | match
-   case-01 | auto | auto | [] | 0 | auto_applied | 4e786d6 | O
-   case-02 | auto | auto | [] | 0 | auto_applied | bbe388d | O
-   case-03 | auto | auto | [] | 0 | auto_applied | d94f4a3 | O
-   case-04 | auto | auto | [] | 0 | auto_applied | 096b5a0 | O
-   case-05 | auto | auto | [] | 0 | auto_applied | 5140290 | O
-   case-06 | stop:[size] | stop | [size] | 25 | (pending) | - | O
-   case-07 | stop:[size] | stop | [size] | 25 | (pending) | - | O
-   case-08 | stop:[protected_path] | stop | [protected_path] | 40 | (pending) | - | O
-   case-09 | stop:[protected_path] | stop | [protected_path] | 40 | (pending) | - | O
-   case-10 | stop:[secret] | stop | [secret] | 50 | (pending) | - | O
-   case-11 | stop:[test_failed] | stop | [test_failed] | 30 | (pending) | - | O
-   case-12 | stop:[test_failed] | stop | [test_failed] | 30 | (pending) | - | O
-   case-13 | stop:[size,test_failed] | stop | [size,test_failed] | 55 | (pending) | - | O
-   case-14 | stop:[protected_path,secret] | stop | [protected_path,secret] | 90 | (pending) | - | O
-   auto 5 / stop 9 / mismatch 0
-   sandbox commits: 6
-   ```
+    ```
+    case_id | agent | expected | actual | stop_reasons | risk | final_status | commit_sha | match
+    liha-log-timestamp | liha | auto | auto | [] | 0 | auto_applied | 518c392 | O
+    mara-math-helper | mara | auto | auto | [] | 0 | auto_applied | d14a417 | O
+    dena-timeout-10s | dena | auto | auto | [] | 0 | auto_applied | f4bfa02 | O
+    soba-readme-lint | soba | auto | auto | [] | 0 | auto_applied | 7477a0a | O
+    nifa-validate-message | nifa | auto | auto | [] | 0 | auto_applied | 57e7f1e | O
+    liha-monthly-report | liha | stop:[size] | stop | [size] | 25 | (pending) | - | O
+    mara-greek-constants | mara | stop:[size] | stop | [size] | 25 | (pending) | - | O
+    dena-ci-test-step | dena | stop:[protected_path] | stop | [protected_path] | 40 | (pending) | - | O
+    kiro-package-lint | kiro | stop:[protected_path] | stop | [protected_path] | 40 | (pending) | - | O
+    soba-dev-default-key | soba | stop:[secret] | stop | [secret] | 50 | (pending) | - | O
+    nifa-retry-5 | nifa | stop:[test_failed] | stop | [test_failed] | 30 | (pending) | - | O
+    kiro-cache-clear | kiro | stop:[test_failed] | stop | [test_failed] | 30 | (pending) | - | O
+    liha-event-collector | liha | stop:[size,test_failed] | stop | [size,test_failed] | 55 | (pending) | - | O
+    mara-release-workflow | mara | stop:[protected_path,secret] | stop | [protected_path,secret] | 90 | (pending) | - | O
+    auto 5 / stop 9 / mismatch 0
+    sandbox commits: 6
+    ```
 4. `pnpm serve` — 서버를 띄운다.
 5. 브라우저에서 `http://127.0.0.1:7788` 을 연다.
 
@@ -52,11 +52,11 @@ pnpm serve
 pnpm batch resume <case_id> approve|reject [note]
 ```
 
-- `approve` — 대기 건을 적용하고 커밋한다. 출력 예 (별도 clone에서 `case-06`에 실행한 실제 출력):
+- `approve` — 대기 건을 적용하고 커밋한다. 출력 예 (별도 clone에서 `liha-monthly-report`에 실행한 실제 출력):
   ```json
   {
     "final_status": "approved_applied",
-    "commit_sha": "3d8290671ca1692c8af8c0f168a1e39b1cda23b2"
+    "commit_sha": "20f44f2335822dc24b681f5d96598a42e90beb7b"
   }
   ```
 - `reject` — 반영 없이 `rejected`로 기록한다. 서버 API에서는 `note`가 필수다
@@ -99,7 +99,7 @@ src/gate/        게이트 코어
 src/server.ts    웹 서버 (작성 중)
 src/ui.html      승인 화면 (작성 중)
 scripts/         init-sandbox.ts, run-batch.ts, threshold-dist.ts
-fixtures/        14건 케이스 (case-01.json … case-14.json)
+fixtures/        14건 케이스 (`<agent>-<slug>.json`, 예 `liha-log-timestamp.json`)
 data/            gate.sqlite (생성물, git 제외)
 sandbox/         패치가 적용되는 git 저장소 (생성물, git 제외)
 ```

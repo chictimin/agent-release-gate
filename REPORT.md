@@ -35,13 +35,13 @@ flowchart TB
 
 | 신호 | 계산식 | 막는 위험 |
 |---|---|---|
-| `size` | `lines_changed > 70` 또는 `files > 2` | 사람이 한 번에 읽기 어려운 큰 변경이 그대로 들어가는 위험 |
-| `protected_path` | 경로가 `.github/**`·`package.json`·`pyproject.toml`·파일명 `auth` 포함·`.env` 포함 중 하나에 해당 | CI·의존성·인증·비밀 설정이 바뀌는 위험 |
-| `secret` | 추가된 줄(`+`, `+++` 제외)에 `sk-…`·`ghp_…`·`AKIA…`·`PRIVATE KEY` 패턴 중 하나가 매칭 | 비밀키가 저장소에 커밋되는 위험 |
-| `test_failed` | `test_passed === false` | 깨진 변경이 그대로 들어가는 위험 |
+| 변경량 많음 (`size`) | `lines_changed > 70` 또는 `files > 2` | 사람이 한 번에 읽기 어려운 큰 변경이 그대로 들어가는 위험 |
+| 핵심 설정 파일 (`protected_path`) | 경로가 `.github/**`·`package.json`·`pyproject.toml`·파일명 `auth` 포함·`.env` 포함 중 하나에 해당 | CI·의존성·인증·비밀 설정이 바뀌는 위험 |
+| 키 노출 의심 (`secret`) | 추가된 줄(`+`, `+++` 제외)에 `sk-…`·`ghp_…`·`AKIA…`·`PRIVATE KEY` 패턴 중 하나가 매칭 | 비밀키가 저장소에 커밋되는 위험 |
+| 테스트 실패 (`test_failed`) | `test_passed === false` | 깨진 변경이 그대로 들어가는 위험 |
 
-위험 점수는 신호 가중치(`size` 25, `protected_path` 40, `secret` 50,
-`test_failed` 30)의 합을 0~100으로 자른 값이다.
+위험 점수는 신호 가중치(변경량 많음 25, 핵심 설정 파일 40, 키 노출 의심 50,
+테스트 실패 30)의 합을 0~100으로 자른 값이다.
 
 fail-closed 원칙을 쓴다. 신호 계산 중 예외가 나면 `risk_score` 100,
 `stop_reasons`에 `review_error`를 넣어 멈춤 쪽으로 보낸다
@@ -73,21 +73,21 @@ files: p25=1 p50=2 p75=6 p90=14 (n=300)
 `pnpm batch`를 별도 clone에서 실행한 실제 출력 원문:
 
 ```
-case_id | expected | actual | stop_reasons | risk | final_status | commit_sha | match
-case-01 | auto | auto | [] | 0 | auto_applied | 4e786d6 | O
-case-02 | auto | auto | [] | 0 | auto_applied | bbe388d | O
-case-03 | auto | auto | [] | 0 | auto_applied | d94f4a3 | O
-case-04 | auto | auto | [] | 0 | auto_applied | 096b5a0 | O
-case-05 | auto | auto | [] | 0 | auto_applied | 5140290 | O
-case-06 | stop:[size] | stop | [size] | 25 | (pending) | - | O
-case-07 | stop:[size] | stop | [size] | 25 | (pending) | - | O
-case-08 | stop:[protected_path] | stop | [protected_path] | 40 | (pending) | - | O
-case-09 | stop:[protected_path] | stop | [protected_path] | 40 | (pending) | - | O
-case-10 | stop:[secret] | stop | [secret] | 50 | (pending) | - | O
-case-11 | stop:[test_failed] | stop | [test_failed] | 30 | (pending) | - | O
-case-12 | stop:[test_failed] | stop | [test_failed] | 30 | (pending) | - | O
-case-13 | stop:[size,test_failed] | stop | [size,test_failed] | 55 | (pending) | - | O
-case-14 | stop:[protected_path,secret] | stop | [protected_path,secret] | 90 | (pending) | - | O
+case_id | agent | expected | actual | stop_reasons | risk | final_status | commit_sha | match
+liha-log-timestamp | liha | auto | auto | [] | 0 | auto_applied | 518c392 | O
+mara-math-helper | mara | auto | auto | [] | 0 | auto_applied | d14a417 | O
+dena-timeout-10s | dena | auto | auto | [] | 0 | auto_applied | f4bfa02 | O
+soba-readme-lint | soba | auto | auto | [] | 0 | auto_applied | 7477a0a | O
+nifa-validate-message | nifa | auto | auto | [] | 0 | auto_applied | 57e7f1e | O
+liha-monthly-report | liha | stop:[size] | stop | [size] | 25 | (pending) | - | O
+mara-greek-constants | mara | stop:[size] | stop | [size] | 25 | (pending) | - | O
+dena-ci-test-step | dena | stop:[protected_path] | stop | [protected_path] | 40 | (pending) | - | O
+kiro-package-lint | kiro | stop:[protected_path] | stop | [protected_path] | 40 | (pending) | - | O
+soba-dev-default-key | soba | stop:[secret] | stop | [secret] | 50 | (pending) | - | O
+nifa-retry-5 | nifa | stop:[test_failed] | stop | [test_failed] | 30 | (pending) | - | O
+kiro-cache-clear | kiro | stop:[test_failed] | stop | [test_failed] | 30 | (pending) | - | O
+liha-event-collector | liha | stop:[size,test_failed] | stop | [size,test_failed] | 55 | (pending) | - | O
+mara-release-workflow | mara | stop:[protected_path,secret] | stop | [protected_path,secret] | 90 | (pending) | - | O
 auto 5 / stop 9 / mismatch 0
 sandbox commits: 6
 ```
