@@ -1,5 +1,7 @@
 # agent-release-gate
 
+저장소: <GITHUB_URL>
+
 에이전트가 만든 코드 패치를 자동 반영할지 사람 승인으로 멈출지 가르는 HITL 게이트 (LangGraph JS POC)
 
 ## 요구 환경
@@ -70,9 +72,10 @@ pnpm batch resume <case_id> approve|reject [note]
 
 | 메서드·경로 | 응답 |
 |---|---|
-| `GET /api/cases` | 200, 전체 14건 요약(`created_at` 오름차순). 항목: `case_id`, `request`, `status`(`not_run`/`pending`/`auto_applied`/`approved_applied`/`rejected`), `stop_reasons`, `risk_score`(`not_run`이면 `null`) |
-| `GET /api/cases/:id` | 200 상세. 요약 항목에 `diff`, `files`, `lines_changed`, `test_passed`, `rationale`, `effect_on_approve`, `decision`, `reviewer_note`, `commit_sha` 추가. 모르는 id면 404 |
+| `GET /api/cases` | 200, 전체 14건 요약(`created_at` 오름차순). 항목: `case_id`, `agent`, `branch`, `created_at`, `request`, `status`(`not_run`/`pending`/`auto_applied`/`approved_applied`/`rejected`), `stop_reasons`, `risk_score`(`not_run`이면 `null`), `files`, `updated_at`(`not_run`이면 `null`), `commit_sha` |
+| `GET /api/cases/:id` | 200 상세. 요약 항목에 `diff`, `lines_changed`, `test_passed`, `rationale`, `effect_on_approve`, `decision`, `reviewer_note`, `commit_message`(대기 건은 승인 시 남을 메시지, 처리 건은 `commit_sha`의 실제 메시지, 반려·커밋 없음은 `""`) 추가. 모르는 id면 404 |
 | `GET /api/stats` | 200, `auto`·`pending`·`approved`·`rejected`·`not_run` 수와 `sandbox_commits` |
+| `GET /api/tree` | 200, 작업대 트리. 항목: `path`, `exists_on_main`, `pending_cases`, `history_cases`, `last_commit`(`{sha, subject, date}` 또는 `null`) |
 | `POST /api/run-all` | 200, 아직 실행 안 된 건만 일괄 실행하고 통계 돌려줌 |
 | `POST /api/cases/:id/approve` | body `{ "note"?: string }` → 200 상세. pending이 아니면 409, 모르는 id면 404 |
 | `POST /api/cases/:id/reject` | body `{ "note": string }` 필수 → 200 상세. `note`가 비었으면 400, pending이 아니면 409, 모르는 id면 404 |
@@ -96,9 +99,9 @@ src/gate/        게이트 코어
   rules.ts       임계값·신호 판정(변경량 많음·핵심 설정 파일·키 노출 의심·테스트 실패)·위험 가중치 상수
   sources.ts     케이스 제공 경계 (FixtureSource)
   appliers.ts    저장소 반영 경계 (SandboxApplier)
-src/server.ts    웹 서버 (작성 중)
-src/ui.html      승인 화면 (작성 중)
-scripts/         init-sandbox.ts, run-batch.ts, threshold-dist.ts
+src/server.ts    웹 서버
+src/ui.html      승인 화면
+scripts/         init-sandbox.ts, run-batch.ts, threshold-dist.ts, mock-server.mjs, ui-smoke.mjs (구현자 작성 스텁 점검, 신뢰 불가로 폐기 예정)
 fixtures/        14건 케이스 (`<agent>-<slug>.json`, 예 `liha-log-timestamp.json`)
 data/            gate.sqlite (생성물, git 제외)
 sandbox/         패치가 적용되는 git 저장소 (생성물, git 제외)
