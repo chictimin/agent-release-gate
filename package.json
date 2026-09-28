@@ -8,7 +8,8 @@
     "batch": "tsx scripts/run-batch.ts",
     "serve": "tsx src/server.ts",
     "threshold": "tsx scripts/threshold-dist.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "ui-smoke": "node scripts/ui-smoke.mjs"
   },
   "dependencies": {
     "@langchain/core": "^1.2.13",
