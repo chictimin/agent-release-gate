@@ -1,4 +1,5 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -67,6 +68,38 @@ function readBody(req: IncomingMessage): Promise<unknown> {
   });
 }
 
+/** GET /api/tree: sandbox main HEAD 추적 파일 + pending 건이 새로 만드는 파일. gate 코어는 건드리지 않는다. */
+export async function listTree(
+  h: GateHandles,
+): Promise<{ path: string; exists_on_main: boolean; pending_cases: string[] }[]> {
+  let tracked: string[] = [];
+  try {
+    tracked = execFileSync("git", ["ls-files"], { cwd: h.sandboxDir, encoding: "utf8" })
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l !== "");
+  } catch {
+    tracked = [];
+  }
+  const onMain = new Set(tracked);
+  const pendingFiles = new Map<string, string[]>();
+  for (const s of await listSummaries(h)) {
+    if (s.status !== "pending") continue;
+    const d = await getDetail(h, s.case_id);
+    for (const f of d?.files ?? []) {
+      const arr = pendingFiles.get(f) ?? [];
+      arr.push(s.case_id);
+      pendingFiles.set(f, arr);
+    }
+  }
+  const all = new Set<string>([...onMain, ...pendingFiles.keys()]);
+  return [...all].sort().map((path) => ({
+    path,
+    exists_on_main: onMain.has(path),
+    pending_cases: pendingFiles.get(path) ?? [],
+  }));
+}
+
 const server = createServer((req, res) => {
   void (async () => {
     try {
@@ -86,6 +119,10 @@ const server = createServer((req, res) => {
       }
       if (method === "GET" && parts.join("/") === "api/stats") {
         sendJson(res, 200, await getStats(handles));
+        return;
+      }
+      if (method === "GET" && parts.join("/") === "api/tree") {
+        sendJson(res, 200, await listTree(handles));
         return;
       }
       if (method === "POST" && parts.join("/") === "api/run-all") {
