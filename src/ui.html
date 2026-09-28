@@ -378,8 +378,8 @@
   };
   var STATUS_LABEL = {
     pending: "대기",
-    auto_applied: "자동 적용",
-    approved_applied: "승인 적용",
+    auto_applied: "자동 승인",
+    approved_applied: "승인 반영",
     rejected: "반려",
     not_run: "미실행"
   };
@@ -464,14 +464,14 @@
   }
 
   function badge(signal) {
-    var b = el("span", "badge " + signal, SIGNAL_LABEL[signal] || signal);
-    b.setAttribute("title", signal);
+    var b = el("span", "badge " + signal, SIGNAL_LABEL[signal] || "기타");
+    b.setAttribute("title", SIGNAL_LABEL[signal] || signal);
     return b;
   }
 
   function fileBadge(status) {
-    var b = el("span", "badge f" + status, FILE_STATUS_LABEL[status] || status);
-    b.setAttribute("title", status);
+    var b = el("span", "badge f" + status, FILE_STATUS_LABEL[status] || "기타");
+    b.setAttribute("title", FILE_STATUS_LABEL[status] || status);
     return b;
   }
 
@@ -509,7 +509,7 @@
     var s = state.stats;
     if (!s) { statsEl.appendChild(el("span", null, "통계 불러오는 중")); return; }
     var items = [
-      ["자동", s.auto], ["대기", s.pending], ["승인", s.approved],
+      ["자동 승인", s.auto], ["대기", s.pending], ["승인 반영", s.approved],
       ["반려", s.rejected], ["미실행", s.not_run], ["커밋", s.sandbox_commits]
     ];
     items.forEach(function (pair, i) {
@@ -913,9 +913,6 @@
 
     var req = el("p", "req1", d.request);
     bar.appendChild(req);
-    var eff = el("p", "eff", d.effect_on_approve || "없음");
-    eff.setAttribute("title", d.effect_on_approve || "없음");
-    bar.appendChild(eff);
 
     if (state.fileCommit) {
       var fc = state.fileCommit;
@@ -966,19 +963,18 @@
       });
     } else {
       var dec = el("div", "decided", null);
-      var bits = [];
-      bits.push("결정 " + (STATUS_LABEL[d.status] || d.status));
-      if (d.decision) bits.push("선택 " + d.decision);
-      if (d.reviewer_note) bits.push("사유 " + d.reviewer_note);
-      var span = el("span", null, bits.join(" · "));
-      dec.appendChild(span);
+      var doneLabel = d.status === "auto_applied" ? "자동 승인"
+        : d.status === "approved_applied" ? "승인 반영"
+        : d.status === "rejected" ? "반려"
+        : (STATUS_LABEL[d.status] || d.status);
+      dec.appendChild(el("span", "badge", doneLabel));
+      if (d.status === "rejected" && d.reviewer_note) {
+        dec.appendChild(el("span", null, " 사유 " + d.reviewer_note));
+      }
       if (d.commit_sha) {
-        dec.appendChild(document.createTextNode(" · "));
-        var sha = el("span", "sha", "커밋 " + d.commit_sha);
+        var sha = el("span", "sha", " 커밋 " + String(d.commit_sha).slice(0, 7));
         sha.setAttribute("title", d.commit_sha);
         dec.appendChild(sha);
-      } else {
-        dec.appendChild(document.createTextNode(" · 커밋 없음"));
       }
       bar.appendChild(dec);
     }
@@ -991,7 +987,7 @@
     sec.appendChild(el("h3", null, "케이스 원인"));
     var reasons = el("ul", "rationale", null);
     if (!d.stop_reasons || d.stop_reasons.length === 0) {
-      reasons.appendChild(el("li", null, "멈추지 않음 (자동 적용 대상)"));
+      reasons.appendChild(el("li", null, "멈추지 않음 (자동 승인 대상)"));
     } else {
       (d.rationale || []).forEach(function (r) { reasons.appendChild(el("li", null, r)); });
       if (reasons.children.length === 0) {
