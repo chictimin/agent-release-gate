@@ -1,6 +1,6 @@
 # agent-release-gate
 
-저장소: <GITHUB_URL>
+저장소: https://github.com/chictimin/agent-release-gate
 
 에이전트가 만든 코드 변경을 main에 바로 반영할지, 사람 승인을 기다릴지 가르는 게이트다.
 LangGraph JS의 `interrupt`로 멈추고, 사람이 답하면 멈춘 지점부터 이어서 실행한다.
