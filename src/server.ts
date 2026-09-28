@@ -91,49 +91,83 @@ export async function caseUpdatedAt(
   }
 }
 
-/** rev3: CaseSummary + files + updated_at */
+/** rev3: CaseSummary + files + updated_at. rev5: + agent/branch/created_at/commit_sha, created_at 오름차순 정렬 */
 export async function listEnrichedSummaries(h: GateHandles): Promise<
   {
     case_id: string;
+    agent: string;
+    branch: string;
+    created_at: string;
     request: string;
     status: string;
     stop_reasons: string[];
     risk_score: number | null;
     files: string[];
+    commit_sha: string | null;
     updated_at: string | null;
   }[]
 > {
   const out: {
     case_id: string;
+    agent: string;
+    branch: string;
+    created_at: string;
     request: string;
     status: string;
     stop_reasons: string[];
     risk_score: number | null;
     files: string[];
+    commit_sha: string | null;
     updated_at: string | null;
   }[] = [];
   for (const s of await listSummaries(h)) {
+    const meta = h.source.load(s.case_id);
     if (s.status === "not_run") {
-      out.push({ ...s, files: [], updated_at: null });
+      out.push({
+        ...s,
+        agent: meta.agent,
+        branch: meta.branch,
+        created_at: meta.created_at,
+        files: [],
+        commit_sha: null,
+        updated_at: null,
+      });
       continue;
     }
     const d = await getDetail(h, s.case_id);
     out.push({
       ...s,
+      agent: meta.agent,
+      branch: meta.branch,
+      created_at: meta.created_at,
       files: d?.files ?? [],
+      commit_sha: d?.commit_sha ?? null,
       updated_at: await caseUpdatedAt(h, s.case_id),
     });
   }
+  out.sort((a, b) =>
+    a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0,
+  );
   return out;
 }
 
-/** rev4: CaseDetail + commit_message. pending은 승인 시 남을 메시지, 처리 건은 commit_sha의 실제 메시지, rejected·커밋 없음은 "" */
+/** rev4: CaseDetail + commit_message. pending은 승인 시 남을 메시지, 처리 건은 commit_sha의 실제 메시지, rejected·커밋 없음은 "". rev5: + agent/branch/created_at */
 export async function getEnrichedDetail(
   h: GateHandles,
   caseId: string,
-): Promise<(CaseDetail & { commit_message: string }) | null> {
+): Promise<
+  (
+    CaseDetail & {
+      commit_message: string;
+      agent: string;
+      branch: string;
+      created_at: string;
+    }
+  ) | null
+> {
   const d = await getDetail(h, caseId);
   if (d === null) return null;
+  const meta = h.source.load(caseId);
   let commit_message = "";
   if (d.status === "pending") {
     commit_message = buildCommitMessage(d.case_id, d.request);
@@ -148,7 +182,13 @@ export async function getEnrichedDetail(
       commit_message = "";
     }
   }
-  return { ...d, commit_message };
+  return {
+    ...d,
+    commit_message,
+    agent: meta.agent,
+    branch: meta.branch,
+    created_at: meta.created_at,
+  };
 }
 
 /** rev4: sandbox main에서 그 경로의 마지막 커밋. main에 없는 파일은 null */

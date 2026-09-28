@@ -1,1 +1,0 @@
-{"case_id":"case-03","expected":{"route":"auto","stop_reasons":[]},"request":"기본 타임아웃을 10초로 상향","test_passed":true,"diff":"diff --git a/src/app-config.ts b/src/app-config.ts\n--- a/src/app-config.ts\n+++ b/src/app-config.ts\n@@ -6,4 +6,4 @@\n export const defaultConfig: AppConfig = {\n-  timeoutMs: 5000,\n+  timeoutMs: 10000,\n   retries: 3,\n };\n"}

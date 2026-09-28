@@ -4,6 +4,9 @@ import { join } from "node:path";
 /** 그래프에 들어가는 케이스 입력. expected는 포함하지 않는다. */
 export interface CaseInput {
   case_id: string;
+  agent: string;
+  branch: string;
+  created_at: string;
   request: string;
   diff: string;
   test_passed: boolean;
@@ -17,6 +20,9 @@ export interface CaseSource {
 
 interface FixtureFile {
   case_id: string;
+  agent: string;
+  branch: string;
+  created_at: string;
   request: string;
   diff: string;
   test_passed: boolean;
@@ -39,6 +45,9 @@ export class FixtureSource implements CaseSource {
     const parsed = JSON.parse(raw) as FixtureFile;
     return {
       case_id: parsed.case_id,
+      agent: parsed.agent,
+      branch: parsed.branch,
+      created_at: parsed.created_at,
       request: parsed.request,
       diff: parsed.diff,
       test_passed: parsed.test_passed,

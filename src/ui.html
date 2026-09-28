@@ -121,7 +121,35 @@
   .case[data-highlight="true"] { background: #fff8c5; }
   .case[data-highlight="true"][aria-current="true"] { background: #ddf4ff; }
   .case .cid { font-family: var(--mono); font-size: 12px; color: var(--accent); }
-  .case .req { margin: 2px 0 6px; overflow-wrap: break-word; }
+  .case .topline, .histrow .topline {
+    display: flex; gap: 8px; align-items: baseline; min-width: 0;
+  }
+  .case .title, .histrow .title {
+    flex: 1 1 auto; min-width: 0; font-weight: 600;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    overflow-wrap: break-word;
+  }
+  .case .req { margin: 0; font-weight: 600; overflow-wrap: break-word; }
+  .case .req.oneline {
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .case .cause {
+    display: inline-flex; gap: 4px; align-items: center; flex: 0 0 auto;
+    font-size: 12px; color: var(--muted); font-weight: 400; margin-left: 8px;
+  }
+  .cdot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: 0 0 auto; }
+  .cdot.secret { background: #ff8182; }
+  .cdot.test_failed { background: #54aeff; }
+  .cdot.protected_path { background: #d2a8ff; }
+  .cdot.size { background: #d4a72c; }
+  .case .sub, .histrow .sub {
+    margin-top: 2px; font-size: 12px; color: var(--muted);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    font-family: var(--mono);
+  }
+  .case .sub .drafttxt { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-weight: 600; }
+  .drafttxt.draft-approve { color: var(--ok); }
+  .drafttxt.draft-reject { color: var(--danger); }
   .case .meta { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 12px; color: var(--muted); }
   .badge {
     display: inline-block; font-size: 11px; font-weight: 500;
@@ -189,6 +217,11 @@
   }
   .decbar-top { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
   .decbar-top h2 { font-size: 15px; margin: 0; font-family: var(--mono); font-weight: 600; }
+  .decbar .metaline {
+    flex: 1 1 100%; margin: 0; font-size: 12px; color: var(--muted);
+    font-family: var(--mono);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
   .decbar .req1, .decbar .eff {
     margin: 4px 0 0; font-size: 13px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -280,6 +313,8 @@
   .histrow[aria-current="true"] { background: #ddf4ff; border-left: 3px solid var(--accent); padding-left: 13px; }
   .histrow[data-highlight="true"] { background: #fff8c5; }
   .histrow[data-highlight="true"][aria-current="true"] { background: #ddf4ff; }
+  .histrow .topline { flex: 1 1 100%; }
+  .histrow .sub { flex: 1 1 100%; }
   .histrow .cid { font-family: var(--mono); font-size: 12px; color: var(--accent); }
   .histrow .sha { font-family: var(--mono); font-size: 12px; color: var(--muted); }
   .status { font-weight: 600; }
@@ -601,6 +636,38 @@
     return Object.keys(allow).length;
   }
 
+  var CAUSE_ORDER = ["secret", "test_failed", "protected_path", "size"];
+
+  // 추가 3: 대표 멈춤 원인 1개(우선순위 secret > test_failed > protected_path > size). 2개 이상이면 "+N"
+  function repCause(reasons) {
+    var rs = reasons || [];
+    var first = null;
+    for (var i = 0; i < CAUSE_ORDER.length; i++) {
+      if (rs.indexOf(CAUSE_ORDER[i]) >= 0) { first = CAUSE_ORDER[i]; break; }
+    }
+    if (!first) {
+      for (var j = 0; j < rs.length; j++) {
+        if (SIGNAL_LABEL[rs[j]]) { first = rs[j]; break; }
+      }
+    }
+    if (!first) return null;
+    var extra = rs.length - 1;
+    var s = el("span", "cause", null);
+    s.setAttribute("title", rs.map(function (r) { return SIGNAL_LABEL[r] || r; }).join(", "));
+    var dot = el("span", "cdot " + first, null);
+    dot.setAttribute("aria-hidden", "true");
+    s.appendChild(dot);
+    s.appendChild(el("span", null,
+      (SIGNAL_LABEL[first] || first) + (extra > 0 ? " +" + extra : "")));
+    return s;
+  }
+
+  function filesLine(c) {
+    var files = c.files || [];
+    if (files.length === 0) return "";
+    return files[0] + (files.length > 1 ? " 외 " + (files.length - 1) : "");
+  }
+
   function caseButton(c) {
     var b = el("button", "case", null);
     b.type = "button";
@@ -610,14 +677,20 @@
     if (highlightIds()[c.case_id]) b.setAttribute("data-highlight", "true");
     var draft = state.drafts[c.case_id];
     if (draft) b.setAttribute("data-draft", draft.kind);
-    b.appendChild(el("div", "cid", c.case_id));
-    b.appendChild(el("div", "req", c.request));
-    var meta = el("div", "meta", null);
-    (c.stop_reasons || []).forEach(function (sig) { meta.appendChild(badge(sig)); });
-    meta.appendChild(statusSpan(c.status));
-    meta.appendChild(el("span", "risk", riskText(c.risk_score)));
-    if (draft) meta.appendChild(draftChip(draft.kind));
-    b.appendChild(meta);
+    var top = el("div", "topline", null);
+    var title = el("span", "title", c.request);
+    title.setAttribute("title", c.request);
+    top.appendChild(title);
+    var cause = repCause(c.stop_reasons);
+    if (cause) top.appendChild(cause);
+    b.appendChild(top);
+    var sub = el("div", "sub", (c.agent ? c.agent + " · " : "") + filesLine(c));
+    sub.setAttribute("title", (c.agent ? c.agent + " · " : "") + (c.files || []).join(", "));
+    if (draft) {
+      sub.appendChild(el("span", "drafttxt draft-" + draft.kind,
+        draft.kind === "approve" ? " · 승인 예정" : " · 반려 예정"));
+    }
+    b.appendChild(sub);
     b.addEventListener("click", function () {
       state.fileCommit = null;
       selectCase(c.case_id);
@@ -632,9 +705,17 @@
     b.setAttribute("data-case", c.case_id);
     b.setAttribute("aria-current", state.selected === c.case_id ? "true" : "false");
     if (highlightIds()[c.case_id]) b.setAttribute("data-highlight", "true");
-    b.appendChild(el("span", "cid", c.case_id));
-    b.appendChild(statusSpan(c.status));
-    b.appendChild(el("span", "sha", c.commit_sha ? ("커밋 " + c.commit_sha) : "커밋 없음"));
+    var top = el("div", "topline", null);
+    var title = el("span", "title", c.request);
+    title.setAttribute("title", c.request);
+    top.appendChild(title);
+    top.appendChild(statusSpan(c.status));
+    b.appendChild(top);
+    var subTxt = c.agent ? c.agent : "";
+    if (c.commit_sha) subTxt += (subTxt ? " · " : "") + "커밋 " + String(c.commit_sha).slice(0, 7);
+    var sub = el("div", "sub", subTxt);
+    if (c.commit_sha) sub.setAttribute("title", c.commit_sha);
+    b.appendChild(sub);
     b.addEventListener("click", function () {
       state.fileCommit = null;
       selectCase(c.case_id);
@@ -886,6 +967,20 @@
     return "+" + s.added + "/-" + s.removed;
   }
 
+  // 추가 4: 결정 바 상단 muted 한 줄 "branch · agent · HH:mm". case_id는 표시하지 않는다
+  function hhmm(iso) {
+    var m = String(iso || "").match(/T(\d{2}):(\d{2})/);
+    return m ? m[1] + ":" + m[2] : "";
+  }
+
+  function metaLine(d) {
+    var t = hhmm(d.created_at);
+    var txt = (d.branch || "") + " · " + (d.agent || "") + (t ? " · " + t : "");
+    var p = el("div", "metaline", txt);
+    p.setAttribute("title", txt);
+    return p;
+  }
+
   function renderCommitMessage(d) {
     if (!d.commit_message) return null;
     var box = el("div", "commitmsg", null);
@@ -905,10 +1000,9 @@
     var bar = el("div", "decbar", null);
     bar.setAttribute("data-role", "decision-bar");
     var top = el("div", "decbar-top", null);
-    top.appendChild(el("h2", null, d.case_id));
+    top.appendChild(metaLine(d));
     top.appendChild(statusSpan(d.status));
     (d.stop_reasons || []).forEach(function (sig) { top.appendChild(badge(sig)); });
-    top.appendChild(el("span", "risk", riskText(d.risk_score)));
     bar.appendChild(top);
 
     var req = el("p", "req1", d.request);
@@ -997,6 +1091,7 @@
       }
     }
     sec.appendChild(reasons);
+    sec.appendChild(el("p", null, riskText(d.risk_score)));
     sec.appendChild(el("p", null, d.test_passed ? "테스트 통과" : "테스트 실패"));
     var added = 0, removed = 0;
     sections.forEach(function (s) { added += s.added; removed += s.removed; });
@@ -1203,7 +1298,6 @@
       approves.forEach(function (id) {
         var c = caseById(id);
         var item = el("div", "mitem", null);
-        item.appendChild(el("span", "cid", id + " "));
         item.appendChild(el("span", null, c ? c.request : ""));
         item.appendChild(el("div", "cmeta", "sandbox 커밋 +1 · 현재 " + commits));
         body.appendChild(item);
@@ -1214,7 +1308,6 @@
       rejects.forEach(function (id) {
         var c = caseById(id);
         var item = el("div", "mitem", null);
-        item.appendChild(el("span", "cid", id + " "));
         item.appendChild(el("span", null, c ? c.request : ""));
         item.appendChild(el("div", "cmeta", "사유: " + state.drafts[id].note));
         body.appendChild(item);
@@ -1278,7 +1371,8 @@
       persistDrafts();
       outcomes.forEach(function (o) {
         var row = el("div", "mresult", null);
-        row.appendChild(el("span", "cid", o.id + " "));
+        var rc = caseById(o.id);
+        row.appendChild(el("span", null, (rc ? rc.request : o.id) + " "));
         if (o.ok) row.appendChild(el("span", "ok", "성공"));
         else {
           row.appendChild(el("span", "fail", "실패"));

@@ -28,9 +28,24 @@ interface Expected {
   stop_reasons: string[];
 }
 
-function readExpected(caseId: string): Expected {
+interface FixtureMeta {
+  expected: Expected;
+  agent: string;
+  created_at: string;
+}
+
+function readMeta(caseId: string): FixtureMeta {
   const raw = readFileSync(join(fixturesDir, `${caseId}.json`), "utf8");
-  return (JSON.parse(raw) as { expected: Expected }).expected;
+  const parsed = JSON.parse(raw) as {
+    expected: Expected;
+    agent: string;
+    created_at: string;
+  };
+  return {
+    expected: parsed.expected,
+    agent: parsed.agent,
+    created_at: parsed.created_at,
+  };
 }
 
 function sameSet(a: string[], b: string[]): boolean {
@@ -38,8 +53,8 @@ function sameSet(a: string[], b: string[]): boolean {
 }
 
 /**
- * 14건을 차례로 invoke한다. 멈춘 건은 interrupt 상태로 둔 채 넘어간다(재개하지 않는다).
- * 표: case_id | expected | actual route | stop_reasons | risk | final_status | commit_sha | match(O/X)
+ * 14건을 created_at 오름차순으로 차례로 invoke한다. 멈춘 건은 interrupt 상태로 둔 채 넘어간다(재개하지 않는다).
+ * 표: case_id | agent | expected | actual route | stop_reasons | risk | final_status | commit_sha | match(O/X)
  */
 async function runBatch(): Promise<void> {
   const graph = openGate();
@@ -49,10 +64,15 @@ async function runBatch(): Promise<void> {
   let mismatch = 0;
 
   console.log(
-    "case_id | expected | actual | stop_reasons | risk | final_status | commit_sha | match",
+    "case_id | agent | expected | actual | stop_reasons | risk | final_status | commit_sha | match",
   );
-  for (const caseId of source.list()) {
-    const expected = readExpected(caseId);
+  const caseIds = source.list().sort((a, b) => {
+    const ca = readMeta(a).created_at;
+    const cb = readMeta(b).created_at;
+    return ca < cb ? -1 : ca > cb ? 1 : 0;
+  });
+  for (const caseId of caseIds) {
+    const { expected, agent } = readMeta(caseId);
     const config: RunnableConfig = { configurable: { thread_id: caseId } };
     await graph.invoke({ case_id: caseId }, config);
     const snap = await graph.getState(config);
@@ -76,7 +96,7 @@ async function runBatch(): Promise<void> {
     const expStr =
       expected.route === "auto" ? "auto" : `stop:[${expected.stop_reasons.join(",")}]`;
     console.log(
-      `${caseId} | ${expStr} | ${actual} | [${stopReasons.join(",")}] | ${risk} | ${finalStatus || "(pending)"} | ${commitSha.slice(0, 7) || "-"} | ${ok ? "O" : "X"}`,
+      `${caseId} | ${agent} | ${expStr} | ${actual} | [${stopReasons.join(",")}] | ${risk} | ${finalStatus || "(pending)"} | ${commitSha.slice(0, 7) || "-"} | ${ok ? "O" : "X"}`,
     );
   }
 
