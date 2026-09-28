@@ -92,10 +92,24 @@
   #panelVLabel[hidden] { display: none; }
   #tabs { display: flex; gap: 4px; padding: 12px 12px 8px; flex: 0 0 auto; }
   #tabs button {
-    flex: 1 1 auto; font-size: 13px; padding: 4px 8px;
-    background: transparent; color: var(--muted);
+    flex: 1 1 auto; min-width: 0; font-size: 12px; padding: 4px 4px;
+    background: transparent; color: var(--muted); white-space: nowrap;
     border: 1px solid var(--border); border-radius: 6px; cursor: pointer;
   }
+  #tabs button .counter {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    font-variant-numeric: tabular-nums; color: var(--fg);
+    background: var(--canvas); border: 1px solid var(--border);
+    border-radius: 2em; padding: 0 6px; margin-left: 4px;
+  }
+  #tabs button[aria-selected="true"] .counter { background: var(--bg); }
+  .tabbar {
+    display: flex; gap: 8px; align-items: center; margin: 0 12px 8px;
+    font-size: 12px; color: var(--muted); flex: 0 0 auto;
+  }
+  .tabbar[hidden] { display: none; }
+  .tabbar .tstat { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tabbar .btn { font-size: 12px; min-height: 28px; padding: 2px 12px; flex: 0 0 auto; }
   #tabs button[aria-selected="true"] {
     background: var(--canvas); color: var(--fg); font-weight: 600;
     border-color: var(--border);
@@ -367,10 +381,8 @@
 <header>
   <h1>sandbox</h1>
   <span class="branch">main</span>
-  <div class="stats" id="stats" aria-live="polite"></div>
   <div id="headActions">
-    <button id="submitBtn" class="btn btn-primary" type="button" data-role="submit-decisions" aria-label="결정 제출" disabled>결정 제출 (0)</button>
-    <button id="runAll" class="btn" type="button" aria-label="새 변경 불러오기"></button>
+    <button id="runAll" class="btn" type="button" aria-label="새 산출물 가져오기"></button>
   </div>
 </header>
 <div class="layout">
@@ -381,9 +393,11 @@
   <section id="panel" data-role="case-panel" data-collapsed="false" aria-label="케이스 패널">
     <div id="panelMain">
       <div id="tabs" role="tablist" aria-label="보기 전환">
-        <button id="tabPending" role="tab" aria-selected="true" type="button" data-role="tab-pending">대기 0</button>
-        <button id="tabHistory" role="tab" aria-selected="false" type="button" data-role="tab-history">이력 0</button>
+        <button id="tabPending" role="tab" aria-selected="true" type="button" data-role="tab-pending"></button>
+        <button id="tabDraft" role="tab" aria-selected="false" type="button" data-role="tab-draft" title="제출 전 결정"></button>
+        <button id="tabHistory" role="tab" aria-selected="false" type="button" data-role="tab-history"></button>
       </div>
+      <div id="tabbar" class="tabbar" hidden></div>
       <div id="highlightbar" data-role="highlight-bar" hidden></div>
       <div id="list" role="tabpanel" aria-label="목록" data-role="case-list"></div>
     </div>
@@ -443,11 +457,11 @@
 
   var listEl = document.getElementById("list");
   var detailEl = document.getElementById("detail");
-  var statsEl = document.getElementById("stats");
   var runAllBtn = document.getElementById("runAll");
-  var submitBtn = document.getElementById("submitBtn");
   var tabPending = document.getElementById("tabPending");
+  var tabDraft = document.getElementById("tabDraft");
   var tabHistory = document.getElementById("tabHistory");
+  var tabbarEl = document.getElementById("tabbar");
   var wtreeEl = document.getElementById("wtree");
   var highlightbarEl = document.getElementById("highlightbar");
   var panelEl = document.getElementById("panel");
@@ -544,25 +558,12 @@
     });
   }
 
-  function renderStats() {
-    statsEl.textContent = "";
+  function renderHeader() {
+    runAllBtn.textContent = "";
+    runAllBtn.appendChild(icon("sync"));
     var s = state.stats;
-    if (!s) { statsEl.appendChild(el("span", null, "통계 불러오는 중")); return; }
-    var items = [
-      ["자동 승인", s.auto], ["승인 대기", s.pending], ["승인 반영", s.approved],
-      ["반려", s.rejected], ["검사 전", s.not_run], ["커밋", s.sandbox_commits]
-    ];
-    items.forEach(function (pair, i) {
-      if (i > 0) statsEl.appendChild(el("span", null, "·"));
-      var w = el("span", null, pair[0] + " ");
-      w.appendChild(el("b", null, String(pair[1])));
-      statsEl.appendChild(w);
-    });
-    renderRunAll();
-  }
-
-  function renderRunAll() {
-    var s = state.stats;
+    var n = s ? s.not_run : 0;
+    runAllBtn.appendChild(el("span", null, "새 변경 불러오기 (" + n + ")"));
     var empty = !s || s.not_run === 0;
     runAllBtn.disabled = state.busy || empty;
     runAllBtn.setAttribute("title", empty ? RUNALL_EMPTY : RUNALL_DESC);
@@ -597,14 +598,23 @@
   }
 
   function renderSubmitBtn() {
+    var btn = document.getElementById("submitBtn");
+    if (!btn) return;
     var n = draftIds().length;
-    submitBtn.textContent = "";
-    submitBtn.appendChild(el("span", null, "결정 제출 (" + n + ")"));
-    submitBtn.disabled = state.busy || state.submitBusy || n === 0;
+    btn.textContent = "";
+    btn.appendChild(el("span", null, "결정 제출 (" + n + ")"));
+    btn.disabled = state.busy || state.submitBusy || n === 0;
   }
 
   function pendingCases() {
     return state.cases.filter(function (c) { return c.status === "pending"; });
+  }
+  // 대기 탭 노출분 = 서버 pending − draft
+  function visiblePending() {
+    return pendingCases().filter(function (c) { return !state.drafts[c.case_id]; });
+  }
+  function draftCases() {
+    return pendingCases().filter(function (c) { return state.drafts[c.case_id]; });
   }
   function historyCases() {
     return state.cases.filter(function (c) {
@@ -730,6 +740,35 @@
     return b;
   }
 
+  function draftButton(c) {
+    var draft = state.drafts[c.case_id] || { kind: "approve", note: "" };
+    var b = el("button", "case", null);
+    b.type = "button";
+    b.setAttribute("data-role", "case-item");
+    b.setAttribute("data-case", c.case_id);
+    b.setAttribute("aria-current", state.selected === c.case_id ? "true" : "false");
+    if (highlightIds()[c.case_id]) b.setAttribute("data-highlight", "true");
+    b.setAttribute("data-draft", draft.kind);
+    var top = el("div", "topline", null);
+    var title = el("span", "title", c.request);
+    title.setAttribute("title", c.request);
+    top.appendChild(title);
+    var chip = el("span", "badge draft-" + draft.kind,
+      draft.kind === "approve" ? "승인 예정" : "반려 예정");
+    top.appendChild(chip);
+    b.appendChild(top);
+    if (draft.kind === "reject" && draft.note) {
+      var sub = el("div", "sub", draft.note);
+      sub.setAttribute("title", draft.note);
+      b.appendChild(sub);
+    }
+    b.addEventListener("click", function () {
+      state.fileCommit = null;
+      selectCase(c.case_id);
+    });
+    return b;
+  }
+
   function renderHighlightbar() {
     highlightbarEl.textContent = "";
     if (!state.highlight) {
@@ -751,19 +790,81 @@
     highlightbarEl.appendChild(clear);
   }
 
+  function tabLabel(btn, label, n) {
+    btn.textContent = "";
+    btn.appendChild(el("span", null, label + " "));
+    btn.appendChild(el("span", "counter", String(n)));
+  }
+
+  function renderTabs() {
+    tabLabel(tabPending, "대기", visiblePending().length);
+    tabLabel(tabDraft, "예정", draftIds().length);
+    tabLabel(tabHistory, "이력", historyCases().length);
+    if (state.collapsed) {
+      panelVLabel.textContent = "대기 " + visiblePending().length;
+    }
+  }
+
+  function historySummary() {
+    var auto = 0, appr = 0, rej = 0;
+    state.cases.forEach(function (c) {
+      if (c.status === "auto_applied") auto += 1;
+      else if (c.status === "approved_applied") appr += 1;
+      else if (c.status === "rejected") rej += 1;
+    });
+    return "자동 승인 " + auto + " · 승인 반영 " + appr + " · 반려 " + rej +
+      " · 반영 커밋 " + (auto + appr);
+  }
+
+  function renderTabbar() {
+    tabbarEl.textContent = "";
+    if (state.view === "draft") {
+      tabbarEl.removeAttribute("hidden");
+      var approves = draftIds().filter(function (id) { return state.drafts[id].kind === "approve"; }).length;
+      var rejects = draftIds().length - approves;
+      tabbarEl.appendChild(el("span", "tstat", "승인 " + approves + " · 반려 " + rejects));
+      var btn = el("button", "btn btn-primary", null);
+      btn.id = "submitBtn";
+      btn.type = "button";
+      btn.setAttribute("data-role", "submit-decisions");
+      btn.setAttribute("aria-label", "결정 제출");
+      btn.addEventListener("click", function () {
+        openSubmitModal();
+      });
+      tabbarEl.appendChild(btn);
+      renderSubmitBtn();
+    } else if (state.view === "history") {
+      tabbarEl.removeAttribute("hidden");
+      tabbarEl.appendChild(el("span", "tstat", historySummary()));
+    } else {
+      tabbarEl.setAttribute("hidden", "");
+    }
+  }
+
   function renderList() {
     listEl.textContent = "";
     renderHighlightbar();
-    tabPending.textContent = "대기 " + pendingCases().length;
-    tabHistory.textContent = "이력 " + historyCases().length;
-    var rows = state.view === "pending" ? pendingCases() : historyCases();
+    renderTabs();
+    renderTabbar();
+    var rows, emptyMsg;
+    if (state.view === "draft") {
+      rows = draftCases();
+      emptyMsg = "예정된 결정이 없습니다";
+    } else if (state.view === "history") {
+      rows = historyCases();
+      emptyMsg = "처리된 건이 없습니다";
+    } else {
+      rows = visiblePending();
+      emptyMsg = "승인 대기 중인 건이 없습니다";
+    }
     if (rows.length === 0) {
-      listEl.appendChild(el("div", "empty",
-        state.view === "pending" ? "승인 대기 중인 건이 없습니다" : "처리된 건이 없습니다"));
+      listEl.appendChild(el("div", "empty", emptyMsg));
       return;
     }
     rows.forEach(function (c) {
-      listEl.appendChild(state.view === "pending" ? caseButton(c) : historyButton(c));
+      if (state.view === "draft") listEl.appendChild(draftButton(c));
+      else if (state.view === "history") listEl.appendChild(historyButton(c));
+      else listEl.appendChild(caseButton(c));
     });
     if (state.highlight) {
       var first = listEl.querySelector('[data-highlight="true"]');
@@ -887,13 +988,20 @@
     state.highlight = path;
     var pend = entry.pending_cases || [];
     var hist = entry.history_cases || [];
-    if (pend.length > 0) {
+    var vis = pend.filter(function (id) { return !state.drafts[id]; });
+    var drf = pend.filter(function (id) { return state.drafts[id]; });
+    if (vis.length > 0) {
       setView("pending");
       renderList();
       renderWorkspaceTree();
       state.fileCommit = entry.last_commit || null;
-      selectCase(pend[0]);
-    } else if (hist.length > 0) {
+      selectCase(vis[0]);
+    } else if (drf.length > 0) {
+      setView("draft");
+      renderList();
+      renderWorkspaceTree();
+      state.fileCommit = entry.last_commit || null;
+      selectCase(drf[0]);
       setView("history");
       renderList();
       renderWorkspaceTree();
@@ -1294,7 +1402,7 @@
 
   function setBusy(b) {
     state.busy = b;
-    renderRunAll();
+    renderHeader();
     renderSubmitBtn();
     ["approveBtn", "rejectBtn"].forEach(function (id) {
       var n = document.getElementById(id);
@@ -1319,14 +1427,18 @@
       showError("반려하려면 사유를 입력해 주세요");
       return;
     }
+    var before = visiblePending().map(function (c) { return c.case_id; });
+    var at = before.indexOf(caseId);
     state.drafts[caseId] = { kind: kind, note: kind === "reject" ? note : (note || "") };
     persistDrafts();
     renderList();
     renderSubmitBtn();
-    var pendingIds = pendingCases().map(function (c) { return c.case_id; });
-    var idx = pendingIds.indexOf(caseId);
-    var next = pendingIds[idx + 1] || pendingIds[idx];
-    if (next && next !== caseId) selectCase(next);
+    // 대기 탭 기준 다음 건: 표시 전 대기 목록에서 표시한 건의 다음 건
+    var after = visiblePending().map(function (c) { return c.case_id; });
+    var next = state.view === "pending" && after.length > 0
+      ? after[Math.min(Math.max(at, 0), after.length - 1)]
+      : null;
+    if (next) selectCase(next);
     else if (!refreshDecisionBar(caseId)) selectCase(caseId);
   }
 
@@ -1341,7 +1453,6 @@
     box.setAttribute("aria-label", "결정 제출 확인");
     box.appendChild(el("h2", null, "결정 제출"));
     var body = el("div", "mbody", null);
-    var commits = state.stats ? state.stats.sandbox_commits : 0;
     var approves = ids.filter(function (id) { return state.drafts[id].kind === "approve"; });
     var rejects = ids.filter(function (id) { return state.drafts[id].kind === "reject"; });
     if (approves.length > 0) {
@@ -1350,7 +1461,7 @@
         var c = caseById(id);
         var item = el("div", "mitem", null);
         item.appendChild(el("span", null, c ? c.request : ""));
-        item.appendChild(el("div", "cmeta", "sandbox 커밋 +1 · 현재 " + commits));
+        item.appendChild(el("div", "cmeta", "sandbox 커밋 +1"));
         body.appendChild(item);
       });
     }
@@ -1434,9 +1545,10 @@
       return refresh();
     }).then(function () {
       renderSubmitBtn();
-      var np = pendingCases().map(function (c) { return c.case_id; });
+      var np = visiblePending().map(function (c) { return c.case_id; });
       if (state.selected && np.indexOf(state.selected) >= 0) selectCase(state.selected);
       else if (np.length > 0) selectCase(np[0]);
+      else if (draftIds().length > 0) selectCase(draftIds()[0]);
       else {
         state.selected = null;
         renderDetailEmpty("승인 대기 중인 건이 없습니다");
@@ -1472,7 +1584,8 @@
   }
 
   function stepSelection(delta) {
-    var rows = (state.view === "pending" ? pendingCases() : historyCases())
+    var rows = (state.view === "draft" ? draftCases()
+      : state.view === "history" ? historyCases() : visiblePending())
       .map(function (c) { return c.case_id; });
     if (rows.length === 0) return;
     var i = rows.indexOf(state.selected);
@@ -1498,7 +1611,7 @@
     panelToggle.setAttribute("aria-label", collapsed ? "패널 펼치기" : "패널 접기");
     panelToggle.setAttribute("title", collapsed ? "패널 펼치기" : "패널 접기");
     if (collapsed) {
-      panelVLabel.textContent = "대기 " + pendingCases().length;
+      panelVLabel.textContent = "대기 " + visiblePending().length;
       panelVLabel.removeAttribute("hidden");
     } else {
       panelVLabel.setAttribute("hidden", "");
@@ -1509,6 +1622,7 @@
   function setView(v) {
     state.view = v;
     tabPending.setAttribute("aria-selected", v === "pending" ? "true" : "false");
+    tabDraft.setAttribute("aria-selected", v === "draft" ? "true" : "false");
     tabHistory.setAttribute("aria-selected", v === "history" ? "true" : "false");
     renderList();
   }
@@ -1516,7 +1630,7 @@
   function refresh() {
     return api("/api/stats").then(function (s) {
       state.stats = s;
-      renderStats();
+      renderHeader();
       return api("/api/cases");
     }).then(function (cases) {
       state.cases = cases;
@@ -1533,17 +1647,16 @@
       renderWorkspaceTree();
       if (state.collapsed) setPanelCollapsed(true);
     }).catch(function (e) {
-      statsEl.textContent = e.message;
+      renderHeader();
+      renderDetailEmpty(e.message);
     });
   }
 
-  runAllBtn.appendChild(icon("sync"));
-  runAllBtn.appendChild(el("span", null, "새 변경 불러오기"));
   runAllBtn.addEventListener("click", function () {
     setBusy(true);
     api("/api/run-all", { method: "POST" }).then(function (s) {
       state.stats = s;
-      renderStats();
+      renderHeader();
       return api("/api/cases");
     }).then(function (cases) {
       state.cases = cases;
@@ -1563,12 +1676,8 @@
       renderWorkspaceTree();
       renderDetailEmpty("목록에서 건을 선택하세요");
     }).catch(function (e) {
-      statsEl.textContent = e.message;
+      renderDetailEmpty(e.message);
     }).then(function () { setBusy(false); });
-  });
-
-  submitBtn.addEventListener("click", function () {
-    openSubmitModal();
   });
 
   panelToggle.addEventListener("click", function () {
@@ -1576,10 +1685,12 @@
   });
 
   tabPending.addEventListener("click", function () { setView("pending"); });
+  tabDraft.addEventListener("click", function () { setView("draft"); });
   tabHistory.addEventListener("click", function () { setView("history"); });
 
   loadDrafts();
   setPanelCollapsed(lsGet(PANEL_KEY) === "1");
+  renderHeader();
   renderDetailEmpty("목록에서 건을 선택하세요");
   refresh();
 })();

@@ -95,7 +95,7 @@ export function computeSignals(args: {
 
   if (args.testPassed === false) {
     signals.push("test_failed");
-    rationale.push("테스트 실패 (test_passed === false)");
+    rationale.push("테스트 실패");
   }
 
   const raw = signals.reduce((sum, s) => sum + (RISK_WEIGHTS[s] ?? 0), 0);
