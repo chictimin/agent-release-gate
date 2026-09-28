@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>릴리스 승인함</title>
+<style>
+  :root {
+    --bg: #16161d; --surface: #1e1e28; --surface-2: #262633;
+    --fg: #e8e8ee; --muted: #a7a7bb; --faint: #77778c;
+    --border: #2e2e3d; --border-strong: #45455c;
+    --accent: #7aa2ff; --danger: #ff7b7b; --ok: #7dd87d;
+    --mono: ui-monospace, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0; background: var(--bg); color: var(--fg);
+    font-family: -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+    font-size: 14px; line-height: 1.7;
+  }
+  header {
+    display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center;
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  header h1 { font-size: 16px; margin: 0 8px 0 0; }
+  .stats { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--muted); }
+  .stats b { color: var(--fg); font-variant-numeric: tabular-nums; }
+  #runAll {
+    margin-left: auto; font-size: 14px; padding: 8px 16px; min-height: 40px;
+    background: var(--accent); color: #0c0c12; border: none; border-radius: 6px;
+    font-weight: 700; cursor: pointer;
+  }
+  #runAll:disabled { opacity: 0.45; cursor: default; }
+  #tabs { display: flex; gap: 4px; padding: 8px 16px 0; }
+  #tabs button {
+    font-size: 14px; padding: 8px 16px; min-height: 40px;
+    background: transparent; color: var(--muted);
+    border: 1px solid var(--border); border-bottom: none; border-radius: 8px 8px 0 0;
+    cursor: pointer;
+  }
+  #tabs button[aria-selected="true"] { background: var(--surface); color: var(--fg); font-weight: 700; }
+  main { display: flex; gap: 0; padding: 0 16px 24px; align-items: flex-start; }
+  #list { flex: 0 0 340px; max-width: 40vw; border: 1px solid var(--border); border-radius: 0 8px 8px 8px; background: var(--surface); overflow: hidden; }
+  #detail { flex: 1 1 auto; min-width: 0; margin-left: 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); padding: 16px; }
+  .case {
+    display: block; width: 100%; text-align: left; font-size: 13px;
+    background: transparent; color: var(--fg); border: none;
+    border-bottom: 1px solid var(--border); padding: 10px 12px; cursor: pointer;
+  }
+  .case:hover { background: rgba(255,255,255,0.04); }
+  .case[aria-current="true"] { background: var(--surface-2); border-left: 3px solid var(--accent); }
+  .case .cid { font-family: var(--mono); font-size: 12px; color: var(--accent); }
+  .case .req { margin: 2px 0 6px; overflow-wrap: break-word; }
+  .case .meta { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 12px; color: var(--muted); }
+  .badge {
+    display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.02em;
+    border: 1px solid var(--border-strong); border-radius: 4px; padding: 1px 6px; white-space: nowrap;
+  }
+  .badge.size { background: #3a2f14; color: #ffd97d; border-color: #8a6d2f; }
+  .badge.protected_path { background: #3a1f3a; color: #e6a8ff; border-color: #7a4a8a; }
+  .badge.secret { background: #4a1a1a; color: #ffb3b3; border-color: #8a4a4a; }
+  .badge.test_failed { background: #1a3a4a; color: #a8dcff; border-color: #4a7a8a; }
+  .risk { font-variant-numeric: tabular-nums; }
+  .empty { padding: 16px; color: var(--faint); font-size: 13px; }
+  #detail h2 { font-size: 15px; margin: 0 0 8px; font-family: var(--mono); }
+  #detail section { margin: 12px 0; }
+  #detail h3 { font-size: 12px; color: var(--muted); letter-spacing: 0.06em; margin: 0 0 4px; }
+  #detail p { margin: 0 0 4px; overflow-wrap: break-word; }
+  pre.diff {
+    font-family: var(--mono); font-size: 12px; line-height: 1.6;
+    background: #101016; border: 1px solid var(--border); border-radius: 6px;
+    padding: 10px 12px; overflow-x: auto; white-space: pre;
+  }
+  pre.diff .add { color: var(--ok); }
+  pre.diff .del { color: var(--danger); }
+  pre.diff .hunk { color: var(--accent); }
+  ul.rationale { margin: 0; padding-left: 20px; }
+  #note { width: 100%; min-height: 64px; font-size: 14px; padding: 8px; border-radius: 6px;
+    border: 1px solid var(--border-strong); background: #101016; color: var(--fg); resize: vertical; }
+  .btnrow { display: flex; gap: 8px; margin-top: 8px; }
+  .btnrow button { font-size: 14px; padding: 8px 20px; min-height: 40px; border-radius: 6px; border: none; font-weight: 700; cursor: pointer; }
+  #approveBtn { background: var(--ok); color: #0c140c; }
+  #rejectBtn { background: var(--danger); color: #1a0c0c; }
+  .btnrow button:disabled { opacity: 0.45; cursor: default; }
+  #err { margin-top: 8px; font-size: 13px; color: var(--danger); min-height: 1.5em; }
+  #err:empty { display: none; }
+  .histrow { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline;
+    padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .histrow .cid { font-family: var(--mono); font-size: 12px; color: var(--accent); }
+  .histrow .sha { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .status { font-weight: 700; }
+  .status.pending { color: #ffd97d; }
+  .status.auto_applied { color: var(--ok); }
+  .status.approved_applied { color: #a8dcff; }
+  .status.rejected { color: var(--danger); }
+  .status.not_run { color: var(--faint); }
+</style>
+</head>
+<body>
+<header>
+  <h1>릴리스 승인함</h1>
+  <div class="stats" id="stats" aria-live="polite"></div>
+  <button id="runAll" type="button">전체 실행</button>
+</header>
+<div id="tabs" role="tablist" aria-label="보기 전환">
+  <button id="tabPending" role="tab" aria-selected="true" type="button">대기 목록</button>
+  <button id="tabHistory" role="tab" aria-selected="false" type="button">처리 이력</button>
+</div>
+<main>
+  <div id="list" role="tabpanel" aria-label="목록"></div>
+  <div id="detail" role="tabpanel" aria-label="상세"></div>
+</main>
+<script>
+(function () {
+  "use strict";
+
+  var SIGNAL_LABEL = {
+    size: "크기 초과",
+    protected_path: "보호 경로",
+    secret: "비밀 의심",
+    test_failed: "테스트 실패"
+  };
+  var STATUS_LABEL = {
+    pending: "대기",
+    auto_applied: "자동 적용",
+    approved_applied: "승인 적용",
+    rejected: "반려",
+    not_run: "미실행"
+  };
+
+  var listEl = document.getElementById("list");
+  var detailEl = document.getElementById("detail");
+  var statsEl = document.getElementById("stats");
+  var runAllBtn = document.getElementById("runAll");
+  var tabPending = document.getElementById("tabPending");
+  var tabHistory = document.getElementById("tabHistory");
+
+  var state = { cases: [], stats: null, selected: null, view: "pending", busy: false };
+
+  function esc(s) { return s === null || s === undefined ? "" : String(s); }
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined && text !== null) n.textContent = text;
+    return n;
+  }
+
+  function badge(signal) {
+    var b = el("span", "badge " + signal, SIGNAL_LABEL[signal] || signal);
+    b.title = signal;
+    return b;
+  }
+
+  function statusSpan(status) {
+    return el("span", "status " + status, STATUS_LABEL[status] || status);
+  }
+
+  function api(path, opts) {
+    return fetch(path, opts).then(function (res) {
+      return res.json().then(function (body) {
+        if (!res.ok) {
+          var err = new Error((body && body.error) || ("요청 실패 (상태 " + res.status + ")"));
+          err.status = res.status;
+          throw err;
+        }
+        return body;
+      });
+    }).catch(function (e) {
+      if (e && e.status) throw e;
+      throw new Error("서버에 연결할 수 없습니다");
+    });
+  }
+
+  function renderStats() {
+    statsEl.textContent = "";
+    var s = state.stats;
+    if (!s) { statsEl.appendChild(el("span", null, "통계 불러오는 중")); return; }
+    var items = [
+      ["자동", s.auto], ["대기", s.pending], ["승인", s.approved],
+      ["반려", s.rejected], ["미실행", s.not_run], ["커밋", s.sandbox_commits]
+    ];
+    items.forEach(function (pair, i) {
+      if (i > 0) statsEl.appendChild(el("span", null, "·"));
+      var w = el("span", null, pair[0] + " ");
+      w.appendChild(el("b", null, String(pair[1])));
+      statsEl.appendChild(w);
+    });
+  }
+
+  function pendingCases() {
+    return state.cases.filter(function (c) { return c.status === "pending"; });
+  }
+  function historyCases() {
+    return state.cases.filter(function (c) {
+      return c.status === "auto_applied" || c.status === "approved_applied" || c.status === "rejected";
+    });
+  }
+
+  function caseButton(c) {
+    var b = el("button", "case", null);
+    b.type = "button";
+    b.setAttribute("data-case", c.case_id);
+    b.setAttribute("aria-current", state.selected === c.case_id ? "true" : "false");
+    b.appendChild(el("div", "cid", c.case_id));
+    b.appendChild(el("div", "req", c.request));
+    var meta = el("div", "meta", null);
+    c.stop_reasons.forEach(function (sig) { meta.appendChild(badge(sig)); });
+    meta.appendChild(statusSpan(c.status));
+    meta.appendChild(el("span", "risk", c.risk_score === null || c.risk_score === undefined
+      ? "위험 점수 없음" : ("위험 점수 " + c.risk_score)));
+    b.appendChild(meta);
+    b.addEventListener("click", function () { selectCase(c.case_id); });
+    return b;
+  }
+
+  function renderList() {
+    listEl.textContent = "";
+    var rows = state.view === "pending" ? pendingCases() : historyCases();
+    if (rows.length === 0) {
+      listEl.appendChild(el("div", "empty",
+        state.view === "pending" ? "대기 중인 건이 없습니다" : "처리된 건이 없습니다"));
+      return;
+    }
+    rows.forEach(function (c) {
+      if (state.view === "pending") {
+        listEl.appendChild(caseButton(c));
+      } else {
+        var r = el("div", "histrow", null);
+        r.appendChild(el("span", "cid", c.case_id));
+        r.appendChild(statusSpan(c.status));
+        r.appendChild(el("span", "sha", c.commit_sha ? ("커밋 " + c.commit_sha) : "커밋 없음"));
+        listEl.appendChild(r);
+      }
+    });
+  }
+
+  function renderDiff(pre, diffText) {
+    pre.textContent = "";
+    esc(diffText).split("\n").forEach(function (line) {
+      var s = el("span", null, line + "\n");
+      if (line.indexOf("+") === 0 && line.indexOf("+++") !== 0) s.className = "add";
+      else if (line.indexOf("-") === 0 && line.indexOf("---") !== 0) s.className = "del";
+      else if (line.indexOf("@@") === 0) s.className = "hunk";
+      pre.appendChild(s);
+    });
+  }
+
+  function showError(msg) {
+    var e = document.getElementById("err");
+    if (e) e.textContent = msg;
+  }
+
+  function renderDetailLoading() {
+    detailEl.textContent = "";
+    detailEl.appendChild(el("div", "empty", "불러오는 중"));
+  }
+
+  function renderDetailEmpty(msg) {
+    detailEl.textContent = "";
+    detailEl.appendChild(el("div", "empty", msg));
+  }
+
+  function renderDetail(d) {
+    detailEl.textContent = "";
+    detailEl.appendChild(el("h2", null, d.case_id));
+
+    var secReq = el("section", null, null);
+    secReq.appendChild(el("h3", null, "요청 원문"));
+    secReq.appendChild(el("p", null, d.request));
+    detailEl.appendChild(secReq);
+
+    var secStop = el("section", null, null);
+    secStop.appendChild(el("h3", null, "멈춘 이유"));
+    if (!d.stop_reasons || d.stop_reasons.length === 0) {
+      secStop.appendChild(el("p", null, "멈추지 않음 (자동 적용 대상)"));
+    } else {
+      var badges = el("p", null, null);
+      d.stop_reasons.forEach(function (sig, i) {
+        badges.appendChild(badge(sig));
+        if (i < d.stop_reasons.length - 1) badges.appendChild(document.createTextNode(" "));
+      });
+      secStop.appendChild(badges);
+    }
+    var riskP = el("p", "risk", d.risk_score === null || d.risk_score === undefined
+      ? "위험 점수 없음" : ("위험 점수 " + d.risk_score));
+    secStop.appendChild(riskP);
+    detailEl.appendChild(secStop);
+
+    var secDiff = el("section", null, null);
+    secDiff.appendChild(el("h3", null, "변경 diff"));
+    var pre = el("pre", "diff", null);
+    renderDiff(pre, d.diff || "");
+    secDiff.appendChild(pre);
+    var filesP = el("p", null, "파일 " + (d.files || []).join(", ") +
+      " · 변경 " + d.lines_changed + "줄");
+    filesP.style.color = "#a7a7bb";
+    filesP.style.fontSize = "12px";
+    secDiff.appendChild(filesP);
+    detailEl.appendChild(secDiff);
+
+    var secTest = el("section", null, null);
+    secTest.appendChild(el("h3", null, "검증 로그"));
+    secTest.appendChild(el("p", null, d.test_passed ? "테스트 통과" : "테스트 실패"));
+    detailEl.appendChild(secTest);
+
+    var secRat = el("section", null, null);
+    secRat.appendChild(el("h3", null, "판단 근거"));
+    var ul = el("ul", "rationale", null);
+    (d.rationale || []).forEach(function (r) { ul.appendChild(el("li", null, r)); });
+    secRat.appendChild(ul);
+    detailEl.appendChild(secRat);
+
+    var secEff = el("section", null, null);
+    secEff.appendChild(el("h3", null, "승인 시 효과"));
+    secEff.appendChild(el("p", null, d.effect_on_approve || "없음"));
+    detailEl.appendChild(secEff);
+
+    var secDec = el("section", null, null);
+    secDec.appendChild(el("h3", null, "결정"));
+    var cur = el("p", null, null);
+    cur.appendChild(statusSpan(d.status));
+    if (d.decision) cur.appendChild(document.createTextNode(" · 결정 " + d.decision));
+    if (d.reviewer_note) cur.appendChild(document.createTextNode(" · 메모 " + d.reviewer_note));
+    if (d.commit_sha) cur.appendChild(document.createTextNode(" · 커밋 " + d.commit_sha));
+    secDec.appendChild(cur);
+    detailEl.appendChild(secDec);
+
+    if (d.status === "pending") {
+      var secAct = el("section", null, null);
+      secAct.appendChild(el("h3", null, "반려 사유 입력"));
+      var note = el("textarea", null, null);
+      note.id = "note";
+      note.placeholder = "반려할 때 사유를 입력하세요";
+      secAct.appendChild(note);
+      var row = el("div", "btnrow", null);
+      var ok = el("button", null, "승인");
+      ok.id = "approveBtn"; ok.type = "button";
+      var no = el("button", null, "반려");
+      no.id = "rejectBtn"; no.type = "button";
+      row.appendChild(ok); row.appendChild(no);
+      secAct.appendChild(row);
+      secAct.appendChild(el("div", null, null)).lastChild.id = "err";
+      detailEl.appendChild(secAct);
+      ok.addEventListener("click", function () {
+        decide(d.case_id, "approve", note.value);
+      });
+      no.addEventListener("click", function () {
+        decide(d.case_id, "reject", note.value);
+      });
+    }
+  }
+
+  function setBusy(b) {
+    state.busy = b;
+    runAllBtn.disabled = b;
+    ["approveBtn", "rejectBtn"].forEach(function (id) {
+      var n = document.getElementById(id);
+      if (n) n.disabled = b;
+    });
+    var note = document.getElementById("note");
+    if (note) note.disabled = b;
+  }
+
+  function decide(caseId, kind, note) {
+    showError("");
+    setBusy(true);
+    var path = "/api/cases/" + encodeURIComponent(caseId) + "/" + kind;
+    api(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(kind === "reject" ? { note: note } : { note: note || undefined })
+    }).then(function () {
+      return refresh().then(function () { selectCase(caseId); });
+    }).catch(function (e) {
+      showError(e.message + (e.status ? " (" + e.status + ")" : ""));
+    }).then(function () { setBusy(false); });
+  }
+
+  function selectCase(caseId) {
+    state.selected = caseId;
+    renderList();
+    renderDetailLoading();
+    api("/api/cases/" + encodeURIComponent(caseId)).then(function (d) {
+      if (state.selected === caseId) renderDetail(d);
+    }).catch(function (e) {
+      if (state.selected === caseId) renderDetailEmpty(e.message);
+    });
+  }
+
+  function refresh() {
+    return api("/api/stats").then(function (s) {
+      state.stats = s;
+      renderStats();
+      return api("/api/cases");
+    }).then(function (cases) {
+      state.cases = cases;
+      renderList();
+    }).catch(function (e) {
+      statsEl.textContent = e.message;
+    });
+  }
+
+  runAllBtn.addEventListener("click", function () {
+    setBusy(true);
+    api("/api/run-all", { method: "POST" }).then(function (s) {
+      state.stats = s;
+      renderStats();
+      return api("/api/cases");
+    }).then(function (cases) {
+      state.cases = cases;
+      state.selected = null;
+      renderList();
+      renderDetailEmpty("목록에서 건을 선택하세요");
+    }).catch(function (e) {
+      statsEl.textContent = e.message;
+    }).then(function () { setBusy(false); });
+  });
+
+  function setView(v) {
+    state.view = v;
+    tabPending.setAttribute("aria-selected", v === "pending" ? "true" : "false");
+    tabHistory.setAttribute("aria-selected", v === "history" ? "true" : "false");
+    renderList();
+  }
+  tabPending.addEventListener("click", function () { setView("pending"); });
+  tabHistory.addEventListener("click", function () { setView("history"); });
+
+  renderDetailEmpty("목록에서 건을 선택하세요");
+  refresh();
+})();
+</script>
+</body>
+</html>
