@@ -1148,6 +1148,12 @@
 
     if (d.status === "pending") {
       var draft = state.drafts[d.case_id];
+      var fl = filesLine(d);
+      var effectLine = el("p", "eff",
+        "승인하면 main에 커밋 1개가 추가됩니다" + (fl ? " · " + fl : ""));
+      effectLine.setAttribute("data-role", "approve-effect");
+      effectLine.setAttribute("title", effectLine.textContent);
+      bar.appendChild(effectLine);
       var row = el("div", "actrow", null);
       var note = el("input", null, null);
       note.id = "note";
