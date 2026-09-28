@@ -2,117 +2,78 @@
 
 저장소: <GITHUB_URL>
 
-에이전트가 만든 코드 패치를 자동 반영할지 사람 승인으로 멈출지 가르는 HITL 게이트 (LangGraph JS POC)
+에이전트가 만든 코드 변경을 main에 바로 반영할지, 사람 승인을 기다릴지 가르는 게이트다.
+LangGraph JS의 `interrupt`로 멈추고, 사람이 답하면 멈춘 지점부터 이어서 실행한다.
 
-## 요구 환경
+## 실행
 
-- Node 24
-- pnpm
-
-## 실행 순서
-
-깨끗한 clone에서 아래 순서대로 실행한다.
+Node 24와 pnpm이 필요하다.
 
 ```sh
 pnpm install
-pnpm init-sandbox
-pnpm batch
-pnpm serve
+pnpm init-sandbox   # 변경을 반영할 sandbox/ 저장소를 만든다 (초기 커밋 1개)
+pnpm batch          # 예시 변경 14건을 게이트에 넣는다
+pnpm serve          # http://127.0.0.1:7788
 ```
 
-1. `pnpm install` — 의존성을 설치한다.
-2. `pnpm init-sandbox` — `sandbox/` git 저장소를 만들고 초기 커밋 1개를 찍는다.
-   `data/gate.sqlite`가 있으면 삭제한다 (리셋 겸용).
-3. `pnpm batch` — 14건 fixture를 차례로 실행한다.
-   멈춘 건은 interrupt 상태로 둔 채 다음 건으로 넘어간다.
-   출력 예 (별도 clone에서 실행한 실제 출력):
-    ```
-    case_id | agent | expected | actual | stop_reasons | risk | final_status | commit_sha | match
-    liha-log-timestamp | liha | auto | auto | [] | 0 | auto_applied | 518c392 | O
-    mara-math-helper | mara | auto | auto | [] | 0 | auto_applied | d14a417 | O
-    dena-timeout-10s | dena | auto | auto | [] | 0 | auto_applied | f4bfa02 | O
-    soba-readme-lint | soba | auto | auto | [] | 0 | auto_applied | 7477a0a | O
-    nifa-validate-message | nifa | auto | auto | [] | 0 | auto_applied | 57e7f1e | O
-    liha-monthly-report | liha | stop:[size] | stop | [size] | 25 | (pending) | - | O
-    mara-greek-constants | mara | stop:[size] | stop | [size] | 25 | (pending) | - | O
-    dena-ci-test-step | dena | stop:[protected_path] | stop | [protected_path] | 40 | (pending) | - | O
-    kiro-package-lint | kiro | stop:[protected_path] | stop | [protected_path] | 40 | (pending) | - | O
-    soba-dev-default-key | soba | stop:[secret] | stop | [secret] | 50 | (pending) | - | O
-    nifa-retry-5 | nifa | stop:[test_failed] | stop | [test_failed] | 30 | (pending) | - | O
-    kiro-cache-clear | kiro | stop:[test_failed] | stop | [test_failed] | 30 | (pending) | - | O
-    liha-event-collector | liha | stop:[size,test_failed] | stop | [size,test_failed] | 55 | (pending) | - | O
-    mara-release-workflow | mara | stop:[protected_path,secret] | stop | [protected_path,secret] | 90 | (pending) | - | O
-    auto 5 / stop 9 / mismatch 0
-    sandbox commits: 6
-    ```
-4. `pnpm serve` — 서버를 띄운다.
-5. 브라우저에서 `http://127.0.0.1:7788` 을 연다.
+`pnpm batch`가 끝나면 마지막에 다음 두 줄이 나온다.
 
-## 멈춘 건 재개 (CLI)
+```
+auto 5 / stop 9 / mismatch 0
+sandbox commits: 6
+```
+
+14건 중 5건은 main에 자동으로 커밋되고, 9건은 사람 승인을 기다린다.
+브라우저에서 대기 건을 열어 승인·반려를 표시하고 "결정 제출"을 누르면 반영된다.
+
+처음 상태로 되돌리려면 `pnpm init-sandbox`를 다시 실행한다. `sandbox/`와 `data/gate.sqlite`를 지운다.
+
+### 화면 없이 처리하기
 
 ```sh
 pnpm batch resume <case_id> approve|reject [note]
 ```
 
-- `approve` — 대기 건을 적용하고 커밋한다. 출력 예 (별도 clone에서 `liha-monthly-report`에 실행한 실제 출력):
-  ```json
-  {
-    "final_status": "approved_applied",
-    "commit_sha": "20f44f2335822dc24b681f5d96598a42e90beb7b"
-  }
-  ```
-- `reject` — 반영 없이 `rejected`로 기록한다. 서버 API에서는 `note`가 필수다
-  (빈 문자열이면 400).
+`approve`는 변경을 적용하고 커밋 1개를 만든다. `reject`는 반영하지 않고 반려로 기록한다.
+
+```json
+{ "final_status": "approved_applied", "commit_sha": "20f44f2335822dc24b681f5d96598a42e90beb7b" }
+```
+
+## 구조
+
+```
+src/gate/        게이트 코어 (화면·입력 형식을 모른다)
+  graph.ts       그래프 조립
+  state.ts       그래프 상태
+  checks.ts      diff 파싱과 멈춤 신호 계산 (순수 함수)
+  rules.ts       임계값, 핵심 설정 파일 목록, 키 패턴, 위험 가중치
+  sources.ts     변경을 읽어 오는 경계 (FixtureSource)
+  appliers.ts    저장소에 반영하는 경계 (SandboxApplier)
+src/server.ts    웹 서버
+src/ui.html      승인 화면
+scripts/         init-sandbox, run-batch, threshold-dist
+fixtures/        예시 변경 14건 (<agent>-<slug>.json)
+data/            gate.sqlite, 대기 상태 저장 (생성물)
+sandbox/         변경이 반영되는 git 저장소 (생성물)
+```
+
+`scripts/mock-server.mjs`와 `scripts/ui-smoke.mjs`는 화면 개발 초기에 쓰던 도구로, 지금은 쓰지 않는다.
+
+실제 작업에 붙이려면 두 경계만 바꾸면 된다.
+`sources.ts`에 워커 브랜치의 diff를 읽는 `CaseSource`를, `appliers.ts`에 실제 저장소로 merge하는 `Applier`를 구현한다.
+그래프는 `case_id`, `request`, `diff`, `test_passed`만 받고, 커밋은 `apply` 노드 한 곳에서만 만든다.
 
 ## API
 
-`GET /`는 `src/ui.html`을 서빙한다. API 응답은 전부 JSON이며,
-에러는 `{ "error": "..." }` 형태와 상태코드로 돌려준다
-(`.roster/api-contract.md`가 정본).
+응답은 모두 JSON이다. 에러는 `{ "error": "..." }`와 상태 코드로 돌려준다.
 
 | 메서드·경로 | 응답 |
 |---|---|
-| `GET /api/cases` | 200, 전체 14건 요약(`created_at` 오름차순). 항목: `case_id`, `agent`, `branch`, `created_at`, `request`, `status`(`not_run`/`pending`/`auto_applied`/`approved_applied`/`rejected`), `stop_reasons`, `risk_score`(`not_run`이면 `null`), `files`, `updated_at`(`not_run`이면 `null`), `commit_sha` |
-| `GET /api/cases/:id` | 200 상세. 요약 항목에 `diff`, `lines_changed`, `test_passed`, `rationale`, `effect_on_approve`, `decision`, `reviewer_note`, `commit_message`(대기 건은 승인 시 남을 메시지, 처리 건은 `commit_sha`의 실제 메시지, 반려·커밋 없음은 `""`) 추가. 모르는 id면 404 |
-| `GET /api/stats` | 200, `auto`·`pending`·`approved`·`rejected`·`not_run` 수와 `sandbox_commits` |
-| `GET /api/tree` | 200, 작업대 트리. 항목: `path`, `exists_on_main`, `pending_cases`, `history_cases`, `last_commit`(`{sha, subject, date}` 또는 `null`) |
-| `POST /api/run-all` | 200, 아직 실행 안 된 건만 일괄 실행하고 통계 돌려줌 |
-| `POST /api/cases/:id/approve` | body `{ "note"?: string }` → 200 상세. pending이 아니면 409, 모르는 id면 404 |
-| `POST /api/cases/:id/reject` | body `{ "note": string }` 필수 → 200 상세. `note`가 비었으면 400, pending이 아니면 409, 모르는 id면 404 |
-
-## 리셋 방법
-
-```sh
-pnpm init-sandbox
-```
-
-`sandbox/`를 지우고 다시 만들고, `data/gate.sqlite`를 삭제한다.
-처음부터 다시 하려면 `pnpm init-sandbox` 후 `pnpm batch`를 실행한다.
-
-## 디렉토리 구조
-
-```
-src/gate/        게이트 코어
-  graph.ts       그래프 조립 (intake → generate → verify → review → route → apply/human_gate → record_reject)
-  state.ts       그래프 상태 정의
-  checks.ts      diff 파싱·신호 계산 (순수 함수)
-  rules.ts       임계값·신호 판정(변경량 많음·핵심 설정 파일·키 노출 의심·테스트 실패)·위험 가중치 상수
-  sources.ts     케이스 제공 경계 (FixtureSource)
-  appliers.ts    저장소 반영 경계 (SandboxApplier)
-src/server.ts    웹 서버
-src/ui.html      승인 화면
-scripts/         init-sandbox.ts, run-batch.ts, threshold-dist.ts, mock-server.mjs, ui-smoke.mjs (구현자 작성 스텁 점검, 신뢰 불가로 폐기 예정)
-fixtures/        14건 케이스 (`<agent>-<slug>.json`, 예 `liha-log-timestamp.json`)
-data/            gate.sqlite (생성물, git 제외)
-sandbox/         패치가 적용되는 git 저장소 (생성물, git 제외)
-```
-
-## 확장 경계
-
-- 새 케이스 출처로 바꾸려면 `sources.ts`의 `CaseSource`를 구현한다
-  (이후 `GitBranchSource` 등으로 교체되는 지점).
-  그래프는 `case_id`·`request`·`diff`·`test_passed`만 받으므로
-  fixture 형식을 알지 못한다.
-- 실제 저장소 반영으로 바꾸려면 `appliers.ts`의 `Applier`를 구현한다
-  (이후 실제 저장소 merge로 교체되는 지점).
-  커밋을 만드는 쪽은 `apply` 노드 한 곳뿐이므로 교체 범위가 거기로 묶인다.
+| `GET /api/cases` | 14건 요약, `created_at` 오름차순. `case_id`, `agent`, `branch`, `created_at`, `request`, `status`(`not_run`/`pending`/`auto_applied`/`approved_applied`/`rejected`), `stop_reasons`, `risk_score`, `files`, `updated_at`, `commit_sha` |
+| `GET /api/cases/:id` | 상세. 요약에 `diff`, `lines_changed`, `test_passed`, `rationale`, `effect_on_approve`, `decision`, `reviewer_note`, `commit_message`를 더한다. 없는 id면 404 |
+| `GET /api/stats` | `auto`, `pending`, `approved`, `rejected`, `not_run` 건수와 `sandbox_commits` |
+| `GET /api/tree` | 워크스페이스 파일 목록. `path`, `exists_on_main`, `pending_cases`, `history_cases`, `last_commit` |
+| `POST /api/run-all` | 아직 게이트에 넣지 않은 건만 실행하고 통계를 돌려준다 |
+| `POST /api/cases/:id/approve` | body `{ "note"?: string }`. 대기 건이 아니면 409 |
+| `POST /api/cases/:id/reject` | body `{ "note": string }`. 사유가 비면 400, 대기 건이 아니면 409 |
