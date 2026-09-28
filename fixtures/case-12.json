@@ -1,0 +1,1 @@
+{"case_id":"case-12","expected":{"route":"stop","stop_reasons":["test_failed"]},"request":"캐시에 전체 삭제 메서드 추가","test_passed":false,"diff":"diff --git a/src/cache.ts b/src/cache.ts\n--- a/src/cache.ts\n+++ b/src/cache.ts\n@@ -6,4 +6,7 @@\n   set(key: string, value: string): void {\n     this.store.set(key, value);\n   }\n+  clear(): void {\n+    this.store.clear();\n+  }\n }\n"}
