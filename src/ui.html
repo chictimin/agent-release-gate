@@ -206,7 +206,7 @@
     b.appendChild(el("div", "cid", c.case_id));
     b.appendChild(el("div", "req", c.request));
     var meta = el("div", "meta", null);
-    c.stop_reasons.forEach(function (sig) { meta.appendChild(badge(sig)); });
+    (c.stop_reasons || []).forEach(function (sig) { meta.appendChild(badge(sig)); });
     meta.appendChild(statusSpan(c.status));
     meta.appendChild(el("span", "risk", c.risk_score === null || c.risk_score === undefined
       ? "위험 점수 없음" : ("위험 점수 " + c.risk_score)));
@@ -341,7 +341,9 @@
       no.id = "rejectBtn"; no.type = "button";
       row.appendChild(ok); row.appendChild(no);
       secAct.appendChild(row);
-      secAct.appendChild(el("div", null, null)).lastChild.id = "err";
+      var errDiv = el("div", null, null);
+      errDiv.id = "err";
+      secAct.appendChild(errDiv);
       detailEl.appendChild(secAct);
       ok.addEventListener("click", function () {
         decide(d.case_id, "approve", note.value);
