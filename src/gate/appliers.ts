@@ -17,6 +17,11 @@ export interface Applier {
   }): ApplyResult;
 }
 
+/** 승인 시 main에 남는 커밋 메시지. 서버의 미리보기와 동일한 문자열이다. */
+export function buildCommitMessage(caseId: string, request: string): string {
+  return `[gate] ${caseId}: ${request}`;
+}
+
 /** sandbox git 저장소에 diff를 적용하고 커밋하는 적용기. */
 export class SandboxApplier implements Applier {
   constructor(private repoDir: string) {}
@@ -41,7 +46,7 @@ export class SandboxApplier implements Applier {
       execFileSync("git", ["apply", "--check", patch], { cwd: this.repoDir });
       execFileSync("git", ["apply", patch], { cwd: this.repoDir });
       execFileSync("git", ["add", "-A"], { cwd: this.repoDir });
-      const message = `[gate] ${args.caseId}: ${args.request}`;
+      const message = buildCommitMessage(args.caseId, args.request);
       execFileSync("git", ["commit", "-m", message], { cwd: this.repoDir });
       const commit_sha = this.git(["rev-parse", "HEAD"]);
       return { commit_sha };

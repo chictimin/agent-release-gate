@@ -15,16 +15,18 @@
     --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   }
   * { box-sizing: border-box; }
+  html, body { height: 100%; }
   body {
     margin: 0; padding: 0; background: var(--bg); color: var(--fg);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
     font-size: 14px; line-height: 1.5;
+    display: flex; flex-direction: column; height: 100vh; overflow: hidden;
   }
   header {
+    flex: 0 0 auto;
     display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center;
     padding: 12px 16px; border-bottom: 1px solid var(--border);
     background: var(--canvas);
-    position: sticky; top: 0; z-index: 10;
   }
   header h1 { font-size: 16px; margin: 0 4px 0 0; font-weight: 600; }
   .branch {
@@ -46,29 +48,49 @@
   .btn-primary:hover { background: #1a7f37; }
   .btn-danger { background: #cf222e; border-color: #cf222e; color: #ffffff; }
   .btn-danger:hover { background: #a40e26; }
+  .btn[aria-pressed="true"] { outline: 2px solid var(--accent); outline-offset: 2px; }
   .btn svg { flex: 0 0 auto; }
-  #runAll { margin-left: auto; }
+  #headActions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
   .iconbtn {
     display: inline-flex; align-items: center; justify-content: center;
-    width: 30px; height: 30px; padding: 0;
+    width: 30px; height: 30px; padding: 0; flex: 0 0 auto;
     background: var(--canvas); color: var(--muted);
     border: 1px solid var(--border); border-radius: 6px; cursor: pointer;
   }
   .iconbtn:hover { background: #eef1f4; color: var(--fg); }
-  .layout { display: flex; align-items: flex-start; }
+  .layout { flex: 1 1 auto; display: flex; min-height: 0; }
+  /* LNB: 고정, 접기 없음 */
   #lnb {
-    flex: 0 0 280px; width: 280px; border-right: 1px solid var(--border);
-    background: var(--bg); overflow-y: auto;
-    max-height: calc(100vh - 57px);
-    position: sticky; top: 57px;
+    flex: 0 0 260px; width: 260px; border-right: 1px solid var(--border);
+    background: var(--bg); overflow-y: auto; min-height: 0;
+    display: flex; flex-direction: column;
   }
-  details.lnbsec { border-bottom: 1px solid var(--border); }
-  details.lnbsec > summary {
-    cursor: pointer; padding: 10px 16px; font-size: 12px; font-weight: 600;
-    color: var(--muted); list-style: none; display: flex; gap: 6px; align-items: center;
+  .lnbhead {
+    padding: 10px 16px; font-size: 12px; font-weight: 600; color: var(--muted);
+    border-bottom: 1px solid var(--border); flex: 0 0 auto;
   }
-  details.lnbsec > summary::-webkit-details-marker { display: none; }
-  #tabs { display: flex; gap: 4px; padding: 0 12px 8px; }
+  /* 케이스 패널: 가로 접기 */
+  #panel {
+    flex: 0 0 320px; width: 320px; border-right: 1px solid var(--border);
+    background: var(--bg); min-height: 0; display: flex; align-items: stretch;
+  }
+  #panel[data-collapsed="true"] { flex-basis: 40px; width: 40px; }
+  #panelMain {
+    flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; min-height: 0;
+  }
+  #panel[data-collapsed="true"] #panelMain { display: none; }
+  #panelEdge {
+    flex: 0 0 40px; width: 40px; display: flex; flex-direction: column;
+    align-items: center; gap: 8px; padding: 8px 0;
+    border-left: 1px solid var(--border); background: var(--canvas);
+  }
+  #panelVLabel {
+    writing-mode: vertical-rl; font-size: 12px; color: var(--muted);
+    white-space: nowrap; font-variant-numeric: tabular-nums;
+  }
+  #panel[data-collapsed="true"] #panelVLabel { display: block; }
+  #panelVLabel[hidden] { display: none; }
+  #tabs { display: flex; gap: 4px; padding: 10px 12px 8px; flex: 0 0 auto; }
   #tabs button {
     flex: 1 1 auto; font-size: 13px; padding: 5px 8px;
     background: transparent; color: var(--muted);
@@ -78,7 +100,17 @@
     background: var(--canvas); color: var(--fg); font-weight: 600;
     border-color: var(--border);
   }
-  #list { padding-bottom: 8px; }
+  #highlightbar {
+    display: flex; gap: 6px; align-items: center; margin: 0 12px 8px;
+    font-size: 12px; color: var(--muted); flex: 0 0 auto;
+  }
+  #highlightbar[hidden] { display: none; }
+  #highlightbar .hpath {
+    flex: 1 1 auto; min-width: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  #highlightbar .hpath b { font-family: var(--mono); font-weight: 600; color: var(--fg); }
+  #list { flex: 1 1 auto; overflow-y: auto; min-height: 0; padding-bottom: 8px; }
   .case {
     display: block; width: 100%; text-align: left; font-size: 13px;
     background: transparent; color: var(--fg); border: none;
@@ -86,6 +118,8 @@
   }
   .case:hover { background: var(--canvas); }
   .case[aria-current="true"] { background: #ddf4ff; border-left: 3px solid var(--accent); padding-left: 13px; }
+  .case[data-highlight="true"] { background: #fff8c5; }
+  .case[data-highlight="true"][aria-current="true"] { background: #ddf4ff; }
   .case .cid { font-family: var(--mono); font-size: 12px; color: var(--accent); }
   .case .req { margin: 2px 0 6px; overflow-wrap: break-word; }
   .case .meta { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 12px; color: var(--muted); }
@@ -102,37 +136,36 @@
   .badge.fmodified { background: var(--canvas); border-color: var(--border); color: var(--fg); }
   .badge.fdeleted { background: var(--del-bg); border-color: #ff8182; color: var(--danger); }
   .badge.frenamed { background: var(--canvas); border-color: var(--border); color: var(--muted); }
+  .badge.draft-approve { background: var(--add-bg); border-color: #4ac26b; color: var(--ok); font-weight: 600; }
+  .badge.draft-reject { background: var(--del-bg); border-color: #ff8182; color: var(--danger); font-weight: 600; }
   .risk { font-variant-numeric: tabular-nums; }
   .empty { padding: 16px; color: var(--faint); font-size: 13px; }
   /* 워크스페이스 트리 */
-  #filterbar[hidden] { display: none; }
-  #filterbar {
-    display: flex; gap: 6px; align-items: center; margin: 0 12px 8px;
-    font-size: 12px; color: var(--muted);
-  }
-  #filterbar .fpath {
-    flex: 1 1 auto; min-width: 0; font-family: var(--mono);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  #wtree { padding: 0 8px 12px; font-size: 13px; }
-  #wtree details.tdir { margin: 0; }
-  #wtree summary {
-    cursor: pointer; list-style: none; display: flex; gap: 6px; align-items: center;
-    padding: 4px 6px; border-radius: 6px; color: var(--fg); font-weight: 600;
-  }
-  #wtree summary::-webkit-details-marker { display: none; }
-  #wtree summary:hover { background: var(--canvas); }
-  #wtree .tinner { padding-left: 18px; }
-  .tfile {
+  #wtree { padding: 8px; font-size: 13px; }
+  .tdir { margin: 0; }
+  .dirsum {
     display: flex; width: 100%; gap: 6px; align-items: center; text-align: left;
+    cursor: pointer; padding: 4px 6px; border: none; border-radius: 6px;
+    background: transparent; color: var(--fg); font-weight: 600; font-size: 13px;
+  }
+  .dirsum:hover { background: var(--canvas); }
+  .tinner { padding-left: 18px; }
+  .tfile {
+    display: block; width: 100%; text-align: left;
     background: transparent; color: var(--fg); border: none; border-radius: 6px;
-    padding: 4px 6px; cursor: pointer; font-size: 13px; font-family: var(--mono);
+    padding: 4px 6px; cursor: pointer; font-size: 13px;
   }
   .tfile:hover { background: var(--canvas); }
   .tfile[aria-current="true"] { background: #ddf4ff; }
-  .tfile[aria-pressed="true"] { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .tfile[data-highlight="true"] { background: #fff8c5; }
+  .tfile[data-highlight="true"][aria-current="true"] { background: #ddf4ff; }
+  .tfile .trow1 { display: flex; gap: 6px; align-items: center; font-family: var(--mono); }
   .tfile svg { flex: 0 0 auto; color: var(--muted); }
   .tfile .tname { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tfile .tlast {
+    margin: 2px 0 0 22px; font-size: 12px; color: var(--muted);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
   .newfile {
     font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     color: var(--ok); border: 1px solid #4ac26b; border-radius: 2em; padding: 0 6px; white-space: nowrap;
@@ -143,11 +176,12 @@
     border: 1px solid #d4a72c; background: #fff8c5; border-radius: 2em; padding: 0 6px;
   }
   .pcase .dot { width: 7px; height: 7px; border-radius: 50%; background: #d4a72c; display: inline-block; }
-  /* 상세 */
-  #detail {
-    flex: 1 1 auto; min-width: 0;
-    overflow-y: auto; max-height: calc(100vh - 57px);
+  .hdot {
+    display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    background: #8c959f; flex: 0 0 auto;
   }
+  /* 상세 */
+  #detail { flex: 1 1 auto; min-width: 0; overflow-y: auto; min-height: 0; }
   .decbar {
     position: sticky; top: 0; z-index: 5;
     background: var(--bg); border-bottom: 1px solid var(--border);
@@ -160,6 +194,15 @@
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .decbar .eff { color: var(--muted); font-size: 12px; }
+  .decbar .lastcommit { margin: 4px 0 0; font-size: 12px; color: var(--muted); }
+  .decbar .lastcommit .sha { font-family: var(--mono); }
+  .commitmsg {
+    margin: 8px 0 0; font-family: var(--mono); font-size: 12px;
+    border: 1px solid var(--border); border-radius: 6px; background: var(--canvas);
+    padding: 8px 10px; white-space: pre-wrap; overflow-wrap: break-word;
+  }
+  .commitmsg .cmlabel { display: block; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .commitmsg .cmfirst { display: block; font-weight: 600; }
   .actrow { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
   #note {
     flex: 1 1 auto; min-width: 0; font-size: 14px; padding: 5px 12px; min-height: 32px;
@@ -168,6 +211,8 @@
   }
   #err { margin-top: 8px; font-size: 13px; color: var(--danger); min-height: 1.5em; }
   #err:empty { display: none; }
+  #draftline { margin-top: 8px; font-size: 13px; color: var(--muted); }
+  #draftline:empty { display: none; }
   .decided { margin-top: 8px; font-size: 13px; color: var(--muted); }
   .decided .sha { font-family: var(--mono); font-size: 12px; }
   .detailbody { padding: 4px 16px 16px; }
@@ -175,7 +220,6 @@
   .detailbody h3 { font-size: 12px; color: var(--muted); font-weight: 600; margin: 0 0 8px; }
   .detailbody p { margin: 0 0 4px; overflow-wrap: break-word; }
   ul.rationale { margin: 0; padding-left: 20px; }
-  .filetogl { display: flex; gap: 8px; margin-bottom: 8px; }
   .filewrap { display: flex; gap: 16px; align-items: flex-start; }
   .tree { flex: 0 0 220px; min-width: 0; font-size: 12px; }
   .tree details { margin-bottom: 4px; }
@@ -234,6 +278,8 @@
   }
   .histrow:hover { background: var(--canvas); }
   .histrow[aria-current="true"] { background: #ddf4ff; border-left: 3px solid var(--accent); padding-left: 13px; }
+  .histrow[data-highlight="true"] { background: #fff8c5; }
+  .histrow[data-highlight="true"][aria-current="true"] { background: #ddf4ff; }
   .histrow .cid { font-family: var(--mono); font-size: 12px; color: var(--accent); }
   .histrow .sha { font-family: var(--mono); font-size: 12px; color: var(--muted); }
   .status { font-weight: 600; }
@@ -242,9 +288,32 @@
   .status.approved_applied { color: var(--accent); }
   .status.rejected { color: var(--danger); }
   .status.not_run { color: var(--faint); }
+  /* 제출 모달 */
+  #modalOverlay {
+    position: fixed; inset: 0; z-index: 50;
+    background: rgba(31, 35, 40, 0.5);
+    display: flex; align-items: center; justify-content: center;
+  }
+  #modalOverlay[hidden] { display: none; }
+  .submitmodal {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 12px;
+    width: min(560px, calc(100vw - 48px)); max-height: calc(100vh - 96px);
+    display: flex; flex-direction: column;
+  }
+  .submitmodal h2 { font-size: 16px; margin: 0; padding: 16px 16px 0; }
+  .submitmodal .mbody { padding: 8px 16px; overflow-y: auto; }
+  .submitmodal .mbody h3 { font-size: 13px; color: var(--muted); margin: 12px 0 4px; }
+  .submitmodal .mitem { font-size: 13px; margin: 4px 0; overflow-wrap: break-word; }
+  .submitmodal .mitem .cid { font-family: var(--mono); font-size: 12px; color: var(--accent); }
+  .submitmodal .mitem .cmeta { color: var(--muted); font-size: 12px; }
+  .submitmodal .warn { font-size: 13px; font-weight: 600; margin: 12px 0 0; }
+  .submitmodal .mfoot { display: flex; gap: 8px; justify-content: flex-end; padding: 12px 16px 16px; }
+  .submitmodal .mresult { font-size: 13px; margin: 4px 0; }
+  .submitmodal .mresult .ok { color: var(--ok); font-weight: 600; }
+  .submitmodal .mresult .fail { color: var(--danger); font-weight: 600; }
   @media (max-width: 899px) {
-    .layout { flex-direction: column; }
-    #lnb { width: 100%; flex: 1 1 auto; border-right: none; border-bottom: 1px solid var(--border); position: static; max-height: none; }
+    #lnb { flex-basis: 200px; width: 200px; }
+    #panel { flex-basis: 260px; width: 260px; }
     .filewrap { flex-direction: column; }
     .tree { flex: 1 1 auto; width: 100%; }
   }
@@ -255,29 +324,51 @@
   <h1>sandbox</h1>
   <span class="branch">main</span>
   <div class="stats" id="stats" aria-live="polite"></div>
-  <button id="runAll" class="btn" type="button" aria-label="전체 실행" title="전체 실행"></button>
+  <div id="headActions">
+    <button id="submitBtn" class="btn btn-primary" type="button" data-role="submit-decisions" aria-label="결정 제출" disabled>결정 제출 (0)</button>
+    <button id="runAll" class="btn" type="button" aria-label="새 산출물 가져오기"></button>
+  </div>
 </header>
 <div class="layout">
-<aside id="lnb" aria-label="사이드바">
-  <details class="lnbsec" open>
-    <summary>케이스</summary>
-    <div id="tabs" role="tablist" aria-label="보기 전환">
-      <button id="tabPending" role="tab" aria-selected="true" type="button" data-role="tab-pending">대기 목록</button>
-      <button id="tabHistory" role="tab" aria-selected="false" type="button" data-role="tab-history">처리 이력</button>
-    </div>
-    <div id="list" role="tabpanel" aria-label="목록" data-role="case-list"></div>
-  </details>
-  <details class="lnbsec" open>
-    <summary>워크스페이스</summary>
-    <div id="filterbar" hidden></div>
+  <aside id="lnb" aria-label="워크스페이스">
+    <div class="lnbhead">워크스페이스</div>
     <div id="wtree" data-role="workspace-tree"></div>
-  </details>
-</aside>
-<main id="detail" role="tabpanel" aria-label="상세"></main>
+  </aside>
+  <section id="panel" data-role="case-panel" data-collapsed="false" aria-label="케이스 패널">
+    <div id="panelMain">
+      <div id="tabs" role="tablist" aria-label="보기 전환">
+        <button id="tabPending" role="tab" aria-selected="true" type="button" data-role="tab-pending">대기 0</button>
+        <button id="tabHistory" role="tab" aria-selected="false" type="button" data-role="tab-history">처리 이력 0</button>
+      </div>
+      <div id="highlightbar" data-role="highlight-bar" hidden></div>
+      <div id="list" role="tabpanel" aria-label="목록" data-role="case-list"></div>
+    </div>
+    <div id="panelEdge">
+      <button id="panelToggle" class="iconbtn" type="button" data-role="panel-toggle" aria-label="패널 접기"></button>
+      <div id="panelVLabel" hidden></div>
+    </div>
+  </section>
+  <main id="detail" role="tabpanel" aria-label="상세"></main>
 </div>
+<div id="modalOverlay" hidden></div>
 <script>
 (function () {
   "use strict";
+
+  // Octicons v19.38.0 (MIT, © GitHub Inc.) — @primer/octicons build/svg에서 복사
+  var ICON_PATHS = {
+    check: ["M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"],
+    x: ["M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"],
+    chevronDown: ["M12.78 5.22a.749.749 0 0 1 0 1.06l-4.25 4.25a.749.749 0 0 1-1.06 0L3.22 6.28a.749.749 0 1 1 1.06-1.06L8 8.939l3.72-3.719a.749.749 0 0 1 1.06 0Z"],
+    chevronRight: ["M6.22 3.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L9.94 8 6.22 4.28a.75.75 0 0 1 0-1.06Z"],
+    file: ["M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914-.013-.011Z"],
+    dirClosed: ["M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z"],
+    dirOpen: ["M.513 1.513A1.75 1.75 0 0 1 1.75 1h3.5c.55 0 1.07.26 1.4.7l.9 1.2a.25.25 0 0 0 .2.1H13a1 1 0 0 1 1 1v.5H2.75a.75.75 0 0 0 0 1.5h11.978a1 1 0 0 1 .994 1.117L15 13.25A1.75 1.75 0 0 1 13.25 15H1.75A1.75 1.75 0 0 1 0 13.25V2.75c0-.464.184-.91.513-1.237Z"],
+    sidebarCollapse: ["M6.823 7.823a.25.25 0 0 1 0 .354l-2.396 2.396A.25.25 0 0 1 4 10.396V5.604a.25.25 0 0 1 .427-.177Z", "M1.75 0h12.5C15.216 0 16 .784 16 1.75v12.5A1.75 1.75 0 0 1 14.25 16H1.75A1.75 1.75 0 0 1 0 14.25V1.75C0 .784.784 0 1.75 0ZM1.5 1.75v12.5c0 .138.112.25.25.25H9.5v-13H1.75a.25.25 0 0 0-.25.25ZM11 14.5h3.25a.25.25 0 0 0 .25-.25V1.75a.25.25 0 0 0-.25-.25H11Z"],
+    sidebarExpand: ["m4.177 7.823 2.396-2.396A.25.25 0 0 1 7 5.604v4.792a.25.25 0 0 1-.427.177L4.177 8.177a.25.25 0 0 1 0-.354Z", "M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v12.5A1.75 1.75 0 0 1 14.25 16H1.75A1.75 1.75 0 0 1 0 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25H9.5v-13Zm12.5 13a.25.25 0 0 0 .25-.25V1.75a.25.25 0 0 0-.25-.25H11v13Z"],
+    sync: ["M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z"],
+    xCircle: ["M2.344 2.343h-.001a8 8 0 0 1 11.314 11.314A8.002 8.002 0 0 1 .234 10.089a8 8 0 0 1 2.11-7.746Zm1.06 10.253a6.5 6.5 0 1 0 9.108-9.275 6.5 6.5 0 0 0-9.108 9.275ZM6.03 4.97 8 6.94l1.97-1.97a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l1.97 1.97a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-1.97 1.97a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734L6.94 8 4.97 6.03a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018Z"]
+  };
 
   var SIGNAL_LABEL = {
     size: "크기 초과",
@@ -299,34 +390,41 @@
     renamed: "이름 변경"
   };
   var EXPAND_LIMIT = 40;
-
-  var ICON_PATHS = {
-    check: "M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 0-1.06.752.752 0 0 1 1.06 0l2.47 2.47 6.72-6.72a.75.75 0 0 1 1.06 0Z",
-    x: "M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z",
-    chev: "M8.72 3.78a.749.749 0 0 1 1.06 0l4.25 4.25a.749.749 0 0 1 0 1.06l-4.25 4.25a.749.749 0 1 1-1.06-1.06L12.439 8 8.72 4.28a.749.749 0 0 1 0-1.06Z",
-    dir: "M1.75 1A1.75 1.75 0 0 0 0 2.75v10.5C0 14.216.784 15 1.75 15h12.5A1.75 1.75 0 0 0 16 13.25v-8.5A1.75 1.75 0 0 0 14.25 3H7.5a.25.25 0 0 1-.2-.1l-.9-1.2C6.07 1.26 5.55 1 5 1H1.75Z",
-    file: "M2 1.75C2 .784 2.784 0 3.75 0h6.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16h-9.5A1.75 1.75 0 0 1 2 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h9.5a.25.25 0 0 0 .25-.25V6h-2.75A1.75 1.75 0 0 1 9 4.25V1.5Zm6.75.062V4.25c0 .138.112.25.25.25h2.688l-.011-.013-2.914-2.914Z",
-    play: "M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM6.5 4.11v7.78a.747.747 0 0 0 1.136.643l6.154-3.89a.75.75 0 0 0 0-1.286L7.636 3.467a.747.747 0 0 0-1.136.643Z",
-    xcircle: "M2.343 13.657A8 8 0 1 1 13.658 2.343 8 8 0 0 1 2.343 13.657ZM6.03 4.97 8 6.94l1.97-1.97a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l1.97 1.97a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-1.97 1.97a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734L6.94 8 4.97 6.03a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018Z",
-    unfold: "M8.04 1.34a.75.75 0 0 1 1.06 0l3 3a.75.75 0 0 1-1.06 1.06L8.5 2.91 5.94 5.47a.75.75 0 0 1-1.06-1.06Zm-4.5 9.25a.75.75 0 0 0-1.06 1.06l3 3a.75.75 0 0 0 1.06 0l3-3a.75.75 0 1 0-1.06-1.06L5.94 13.09 3.54 10.59Z",
-    fold: "M5.94 2.85a.75.75 0 0 1 1.06-1.06l3 3a.75.75 0 0 1 0 1.06l-3 3a.75.75 0 1 1-1.06-1.06L8.5 5.41 5.94 2.85Zm0 7.56 2.56 2.56 2.56-2.56a.75.75 0 1 1 1.06 1.06l-3 3a.75.75 0 0 1-1.06 0l-3-3a.75.75 0 1 1 1.06-1.06Z"
-  };
+  var DRAFT_KEY = "gate-drafts-v1";
+  var PANEL_KEY = "gate-panel-v1";
+  var RUNALL_DESC = "아직 게이트를 거치지 않은 에이전트 산출물을 게이트에 넣습니다. 멈춤 신호가 없으면 자동 반영, 있으면 대기로 들어갑니다";
+  var RUNALL_EMPTY = "가져올 새 산출물이 없습니다";
 
   var listEl = document.getElementById("list");
   var detailEl = document.getElementById("detail");
   var statsEl = document.getElementById("stats");
   var runAllBtn = document.getElementById("runAll");
+  var submitBtn = document.getElementById("submitBtn");
   var tabPending = document.getElementById("tabPending");
   var tabHistory = document.getElementById("tabHistory");
   var wtreeEl = document.getElementById("wtree");
-  var filterbarEl = document.getElementById("filterbar");
+  var highlightbarEl = document.getElementById("highlightbar");
+  var panelEl = document.getElementById("panel");
+  var panelToggle = document.getElementById("panelToggle");
+  var panelVLabel = document.getElementById("panelVLabel");
+  var modalOverlay = document.getElementById("modalOverlay");
 
   var state = {
     cases: [], stats: null, selected: null, view: "pending", busy: false,
-    tree: [], treeFilter: null, selectedFiles: []
+    tree: [], highlight: null, selectedFiles: [], drafts: {},
+    collapsedDirs: {}, collapsed: false, fileCommit: null, submitBusy: false
   };
 
   function esc(s) { return s === null || s === undefined ? "" : String(s); }
+
+  function lsGet(k) {
+    try { return window.localStorage.getItem(k); }
+    catch (e) { return null; }
+  }
+  function lsSet(k, v) {
+    try { window.localStorage.setItem(k, v); }
+    catch (e) { /* 저장 실패 시 무시 */ }
+  }
 
   function el(tag, cls, text) {
     var n = document.createElement(tag);
@@ -343,10 +441,13 @@
       s.setAttribute("height", "16");
       s.setAttribute("aria-hidden", "true");
       if (cls) s.setAttribute("class", cls);
-      var p = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      p.setAttribute("d", ICON_PATHS[name] || "");
-      p.setAttribute("fill", "currentColor");
-      s.appendChild(p);
+      var paths = ICON_PATHS[name] || [""];
+      paths.forEach(function (d) {
+        var p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        p.setAttribute("d", d);
+        p.setAttribute("fill", "currentColor");
+        s.appendChild(p);
+      });
       return s;
     }
     return el("span", "noicon " + (cls || ""), "");
@@ -372,6 +473,11 @@
     var b = el("span", "badge f" + status, FILE_STATUS_LABEL[status] || status);
     b.setAttribute("title", status);
     return b;
+  }
+
+  function draftChip(kind) {
+    var label = kind === "approve" ? "승인 예정" : "반려 예정";
+    return el("span", "badge draft-" + kind, label);
   }
 
   function statusSpan(status) {
@@ -412,6 +518,49 @@
       w.appendChild(el("b", null, String(pair[1])));
       statsEl.appendChild(w);
     });
+    renderRunAll();
+  }
+
+  function renderRunAll() {
+    var s = state.stats;
+    var empty = !s || s.not_run === 0;
+    runAllBtn.disabled = state.busy || empty;
+    runAllBtn.setAttribute("title", empty ? RUNALL_EMPTY : RUNALL_DESC);
+  }
+
+  function draftIds() {
+    return Object.keys(state.drafts);
+  }
+
+  function pruneDrafts() {
+    var pending = {};
+    pendingCases().forEach(function (c) { pending[c.case_id] = true; });
+    var changed = false;
+    draftIds().forEach(function (id) {
+      if (!pending[id]) { delete state.drafts[id]; changed = true; }
+    });
+    if (changed) persistDrafts();
+  }
+
+  function persistDrafts() {
+    lsSet(DRAFT_KEY, JSON.stringify(state.drafts));
+  }
+
+  function loadDrafts() {
+    var raw = lsGet(DRAFT_KEY);
+    if (!raw) { state.drafts = {}; return; }
+    try {
+      var v = JSON.parse(raw);
+      if (v && typeof v === "object") state.drafts = v;
+      else state.drafts = {};
+    } catch (e) { state.drafts = {}; }
+  }
+
+  function renderSubmitBtn() {
+    var n = draftIds().length;
+    submitBtn.textContent = "";
+    submitBtn.appendChild(el("span", null, "결정 제출 (" + n + ")"));
+    submitBtn.disabled = state.busy || state.submitBusy || n === 0;
   }
 
   function pendingCases() {
@@ -422,6 +571,12 @@
       return c.status === "auto_applied" || c.status === "approved_applied" || c.status === "rejected";
     });
   }
+  function caseById(id) {
+    for (var i = 0; i < state.cases.length; i++) {
+      if (state.cases[i].case_id === id) return state.cases[i];
+    }
+    return null;
+  }
 
   function treeEntryFor(path) {
     for (var i = 0; i < state.tree.length; i++) {
@@ -430,13 +585,20 @@
     return null;
   }
 
-  function visiblePending() {
-    var rows = pendingCases();
-    if (!state.treeFilter) return rows;
-    var entry = treeEntryFor(state.treeFilter);
+  function highlightIds() {
+    if (!state.highlight) return {};
+    var entry = treeEntryFor(state.highlight);
+    if (!entry) return {};
     var allow = {};
-    ((entry && entry.pending_cases) || []).forEach(function (id) { allow[id] = true; });
-    return rows.filter(function (c) { return allow[c.case_id]; });
+    ((entry.pending_cases) || []).concat((entry.history_cases) || []).forEach(function (id) {
+      allow[id] = true;
+    });
+    return allow;
+  }
+
+  function highlightCount() {
+    var allow = highlightIds();
+    return Object.keys(allow).length;
   }
 
   function caseButton(c) {
@@ -445,14 +607,21 @@
     b.setAttribute("data-role", "case-item");
     b.setAttribute("data-case", c.case_id);
     b.setAttribute("aria-current", state.selected === c.case_id ? "true" : "false");
+    if (highlightIds()[c.case_id]) b.setAttribute("data-highlight", "true");
+    var draft = state.drafts[c.case_id];
+    if (draft) b.setAttribute("data-draft", draft.kind);
     b.appendChild(el("div", "cid", c.case_id));
     b.appendChild(el("div", "req", c.request));
     var meta = el("div", "meta", null);
     (c.stop_reasons || []).forEach(function (sig) { meta.appendChild(badge(sig)); });
     meta.appendChild(statusSpan(c.status));
     meta.appendChild(el("span", "risk", riskText(c.risk_score)));
+    if (draft) meta.appendChild(draftChip(draft.kind));
     b.appendChild(meta);
-    b.addEventListener("click", function () { selectCase(c.case_id); });
+    b.addEventListener("click", function () {
+      state.fileCommit = null;
+      selectCase(c.case_id);
+    });
     return b;
   }
 
@@ -462,49 +631,67 @@
     b.setAttribute("data-role", "case-item");
     b.setAttribute("data-case", c.case_id);
     b.setAttribute("aria-current", state.selected === c.case_id ? "true" : "false");
+    if (highlightIds()[c.case_id]) b.setAttribute("data-highlight", "true");
     b.appendChild(el("span", "cid", c.case_id));
     b.appendChild(statusSpan(c.status));
     b.appendChild(el("span", "sha", c.commit_sha ? ("커밋 " + c.commit_sha) : "커밋 없음"));
-    b.addEventListener("click", function () { selectCase(c.case_id); });
+    b.addEventListener("click", function () {
+      state.fileCommit = null;
+      selectCase(c.case_id);
+    });
     return b;
+  }
+
+  function renderHighlightbar() {
+    highlightbarEl.textContent = "";
+    if (!state.highlight) {
+      highlightbarEl.setAttribute("hidden", "");
+      return;
+    }
+    highlightbarEl.removeAttribute("hidden");
+    var shortName = state.highlight.slice(state.highlight.lastIndexOf("/") + 1);
+    var span = el("span", "hpath", null);
+    span.appendChild(el("b", null, shortName));
+    span.appendChild(el("span", null, " 관련 " + highlightCount() + "건 강조 중"));
+    highlightbarEl.appendChild(span);
+    var clear = iconButton("강조 해제", "xCircle", null);
+    clear.addEventListener("click", function () {
+      state.highlight = null;
+      renderList();
+      renderWorkspaceTree();
+    });
+    highlightbarEl.appendChild(clear);
   }
 
   function renderList() {
     listEl.textContent = "";
+    renderHighlightbar();
     tabPending.textContent = "대기 " + pendingCases().length;
     tabHistory.textContent = "처리 이력 " + historyCases().length;
-    var rows = state.view === "pending" ? visiblePending() : historyCases();
+    var rows = state.view === "pending" ? pendingCases() : historyCases();
     if (rows.length === 0) {
       listEl.appendChild(el("div", "empty",
-        state.view === "pending"
-          ? (state.treeFilter ? "필터에 맞는 건이 없습니다" : "대기 중인 건이 없습니다")
-          : "처리된 건이 없습니다"));
+        state.view === "pending" ? "대기 중인 건이 없습니다" : "처리된 건이 없습니다"));
       return;
     }
     rows.forEach(function (c) {
       listEl.appendChild(state.view === "pending" ? caseButton(c) : historyButton(c));
     });
+    if (state.highlight) {
+      var first = listEl.querySelector('[data-highlight="true"]');
+      if (first && first.scrollIntoView) first.scrollIntoView({ block: "nearest" });
+    }
+  }
+
+  function lastCommitTitle(lc) {
+    if (!lc) return "";
+    var sha7 = String(lc.sha).slice(0, 7);
+    return (lc.subject || "") + " · " + (lc.date || "") + " · " + sha7;
   }
 
   function renderWorkspaceTree() {
     if (!wtreeEl) return;
     wtreeEl.textContent = "";
-    if (filterbarEl) {
-      filterbarEl.textContent = "";
-      if (state.treeFilter) {
-        filterbarEl.removeAttribute("hidden");
-        filterbarEl.appendChild(el("span", "fpath", state.treeFilter));
-        var clear = iconButton("필터 해제", "xcircle", "filterClear");
-        clear.addEventListener("click", function () {
-          state.treeFilter = null;
-          renderList();
-          renderWorkspaceTree();
-        });
-        filterbarEl.appendChild(clear);
-      } else {
-        filterbarEl.setAttribute("hidden", "");
-      }
-    }
     if (state.tree.length === 0) {
       wtreeEl.appendChild(el("div", "empty", "파일 목록을 불러오지 못했습니다"));
       return;
@@ -519,23 +706,35 @@
       }
       node.files.push(e);
     });
-    renderTreeNode(wtreeEl, root);
+    renderTreeNode(wtreeEl, root, "");
   }
 
-  function renderTreeNode(container, node) {
+  function renderTreeNode(container, node, prefix) {
     var dirNames = Object.keys(node.dirs).sort();
     dirNames.forEach(function (name) {
-      var det = el("details", "tdir", null);
-      det.open = true;
-      var sum = el("summary", null, null);
-      sum.appendChild(icon("chev"));
-      sum.appendChild(icon("dir"));
+      var full = prefix === "" ? name : prefix + "/" + name;
+      var wrap = el("div", "tdir", null);
+      var collapsed = !!state.collapsedDirs[full];
+      var sum = el("button", "dirsum", null);
+      sum.type = "button";
+      sum.setAttribute("aria-expanded", collapsed ? "false" : "true");
+      sum.appendChild(icon(collapsed ? "chevronRight" : "chevronDown"));
+      sum.appendChild(icon(collapsed ? "dirClosed" : "dirOpen"));
       sum.appendChild(el("span", null, name));
-      det.appendChild(sum);
-      var inner = el("div", "tinner", null);
-      renderTreeNode(inner, node.dirs[name]);
-      det.appendChild(inner);
-      container.appendChild(det);
+      (function (p) {
+        sum.addEventListener("click", function () {
+          if (state.collapsedDirs[p]) delete state.collapsedDirs[p];
+          else state.collapsedDirs[p] = true;
+          renderWorkspaceTree();
+        });
+      })(full);
+      wrap.appendChild(sum);
+      if (!collapsed) {
+        var inner = el("div", "tinner", null);
+        renderTreeNode(inner, node.dirs[name], full);
+        wrap.appendChild(inner);
+      }
+      container.appendChild(wrap);
     });
     var files = node.files.slice().sort(function (a, b) {
       return a.path < b.path ? -1 : (a.path > b.path ? 1 : 0);
@@ -547,11 +746,12 @@
       b.setAttribute("data-path", f.path);
       b.setAttribute("title", f.path);
       b.setAttribute("aria-current", state.selectedFiles.indexOf(f.path) >= 0 ? "true" : "false");
-      if (state.treeFilter === f.path) b.setAttribute("aria-pressed", "true");
-      b.appendChild(icon("file"));
+      if (state.highlight === f.path) b.setAttribute("data-highlight", "true");
+      var row1 = el("span", "trow1", null);
+      row1.appendChild(icon("file"));
       var shortName = f.path.slice(f.path.lastIndexOf("/") + 1);
-      b.appendChild(el("span", "tname", shortName));
-      if (!f.exists_on_main) b.appendChild(el("span", "newfile", "새 파일"));
+      row1.appendChild(el("span", "tname", shortName));
+      if (!f.exists_on_main) row1.appendChild(el("span", "newfile", "새 파일"));
       if (f.pending_cases && f.pending_cases.length > 0) {
         var pb = el("span", "pcase", null);
         pb.setAttribute("title", f.pending_cases.join(", "));
@@ -559,17 +759,58 @@
         dot.setAttribute("aria-hidden", "true");
         pb.appendChild(dot);
         pb.appendChild(el("span", null, String(f.pending_cases.length)));
-        b.appendChild(pb);
+        row1.appendChild(pb);
+      } else if (f.history_cases && f.history_cases.length > 0) {
+        var hd = el("span", "hdot", null);
+        hd.setAttribute("title", f.history_cases.join(", "));
+        hd.setAttribute("aria-hidden", "true");
+        row1.appendChild(hd);
       }
-      (function (path) {
-        b.addEventListener("click", function () {
-          state.treeFilter = (state.treeFilter === path) ? null : path;
-          renderList();
-          renderWorkspaceTree();
-        });
-      })(f.path);
+      b.appendChild(row1);
+      if (f.last_commit && f.last_commit.subject) {
+        var lc = el("span", "tlast", f.last_commit.subject);
+        lc.setAttribute("data-role", "tree-last-commit");
+        lc.setAttribute("title", lastCommitTitle(f.last_commit));
+        b.appendChild(lc);
+      }
+      (function (entry) {
+        b.addEventListener("click", function () { selectFile(entry); });
+      })(f);
       container.appendChild(b);
     });
+  }
+
+  function selectFile(entry) {
+    var path = entry.path;
+    if (state.highlight === path) {
+      state.highlight = null;
+      renderList();
+      renderWorkspaceTree();
+      return;
+    }
+    state.highlight = path;
+    var pend = entry.pending_cases || [];
+    var hist = entry.history_cases || [];
+    if (pend.length > 0) {
+      setView("pending");
+      renderList();
+      renderWorkspaceTree();
+      state.fileCommit = entry.last_commit || null;
+      selectCase(pend[0]);
+    } else if (hist.length > 0) {
+      setView("history");
+      renderList();
+      renderWorkspaceTree();
+      state.fileCommit = entry.last_commit || null;
+      selectCase(hist[0]);
+    } else {
+      state.fileCommit = entry.last_commit || null;
+      state.selected = null;
+      state.selectedFiles = [];
+      renderList();
+      renderWorkspaceTree();
+      renderDetailEmpty("이 파일에 걸린 건이 없습니다");
+    }
   }
 
   function showError(msg) {
@@ -645,6 +886,21 @@
     return "+" + s.added + "/-" + s.removed;
   }
 
+  function renderCommitMessage(d) {
+    if (!d.commit_message) return null;
+    var box = el("div", "commitmsg", null);
+    box.setAttribute("data-role", "commit-message");
+    var label = d.status === "pending" ? "승인 시 커밋 메시지" : "커밋 메시지";
+    box.appendChild(el("span", "cmlabel", label));
+    var lines = String(d.commit_message).split("\n");
+    box.appendChild(el("span", "cmfirst", lines[0] || ""));
+    if (lines.length > 1) {
+      box.appendChild(el("span", null, "\n" + lines.slice(1).join("\n")));
+    }
+    box.setAttribute("title", d.commit_message);
+    return box;
+  }
+
   function renderDecisionBar(d) {
     var bar = el("div", "decbar", null);
     bar.setAttribute("data-role", "decision-bar");
@@ -661,22 +917,37 @@
     eff.setAttribute("title", d.effect_on_approve || "없음");
     bar.appendChild(eff);
 
+    if (state.fileCommit) {
+      var fc = state.fileCommit;
+      var sha7 = String(fc.sha).slice(0, 7);
+      var line = el("p", "lastcommit", "마지막 커밋: " + (fc.subject || "") + " · " + sha7 + " · " + (fc.date || ""));
+      line.setAttribute("title", lastCommitTitle(fc));
+      bar.appendChild(line);
+    }
+
+    var cm = renderCommitMessage(d);
+    if (cm) bar.appendChild(cm);
+
     if (d.status === "pending") {
+      var draft = state.drafts[d.case_id];
       var row = el("div", "actrow", null);
       var note = el("input", null, null);
       note.id = "note";
       note.type = "text";
+      note.value = (draft && draft.note) || "";
       note.setAttribute("placeholder", "반려할 때 사유를 입력하세요");
       note.setAttribute("aria-label", "반려 사유");
       row.appendChild(note);
       var ok = el("button", "btn btn-primary", null);
       ok.id = "approveBtn"; ok.type = "button";
       ok.setAttribute("aria-label", "승인");
+      ok.setAttribute("aria-pressed", draft && draft.kind === "approve" ? "true" : "false");
       ok.appendChild(icon("check"));
       ok.appendChild(el("span", null, "승인"));
       var no = el("button", "btn btn-danger", null);
       no.id = "rejectBtn"; no.type = "button";
       no.setAttribute("aria-label", "반려");
+      no.setAttribute("aria-pressed", draft && draft.kind === "reject" ? "true" : "false");
       no.appendChild(icon("x"));
       no.appendChild(el("span", null, "반려"));
       row.appendChild(ok); row.appendChild(no);
@@ -684,11 +955,14 @@
       var errDiv = el("div", null, null);
       errDiv.id = "err";
       bar.appendChild(errDiv);
+      var draftLine = el("div", null, draft ? (draft.kind === "approve" ? "승인 예정으로 표시됨 — 다시 누르면 해제됩니다" : "반려 예정으로 표시됨 — 다시 누르면 해제됩니다") : "");
+      draftLine.id = "draftline";
+      bar.appendChild(draftLine);
       ok.addEventListener("click", function () {
-        decide(d.case_id, "approve", note.value);
+        markDraft(d.case_id, "approve", note.value);
       });
       no.addEventListener("click", function () {
-        decide(d.case_id, "reject", note.value);
+        markDraft(d.case_id, "reject", note.value);
       });
     } else {
       var dec = el("div", "decided", null);
@@ -714,7 +988,7 @@
   function renderSummary(d, sections) {
     var sec = el("section", null, null);
     sec.setAttribute("data-role", "summary");
-    sec.appendChild(el("h3", null, "상황 요약"));
+    sec.appendChild(el("h3", null, "케이스 원인"));
     var reasons = el("ul", "rationale", null);
     if (!d.stop_reasons || d.stop_reasons.length === 0) {
       reasons.appendChild(el("li", null, "멈추지 않음 (자동 적용 대상)"));
@@ -771,8 +1045,8 @@
         });
         li.appendChild(b);
         ul.appendChild(li);
+        det.appendChild(ul);
       });
-      det.appendChild(ul);
       tree.appendChild(det);
     });
     wrap.appendChild(tree);
@@ -792,16 +1066,16 @@
     return wrap;
   }
 
-  function renderDiffBlock(sections, files, diffsEl, expandAll) {
+  function renderDiffBlock(sections, files, diffsEl, openByDefault) {
     sections.forEach(function (s, i) {
       var path = sectionPath(s, files, i);
       var det = el("details", "filediff", null);
       det.id = "file-" + i;
       det.setAttribute("data-role", "file-diff");
       det.setAttribute("data-path", path);
-      det.open = expandAll;
+      det.open = openByDefault;
       var sum = el("summary", null, null);
-      sum.appendChild(icon("chev", "fchev"));
+      sum.appendChild(icon("chevronDown", "fchev"));
       sum.appendChild(el("span", "fpath", path + " "));
       sum.appendChild(fileBadge(s.status));
       var pm = el("span", "pm", null);
@@ -859,51 +1133,11 @@
     sec.appendChild(el("h3", null, "변경 파일"));
     var total = 0;
     sections.forEach(function (s) { total += s.added + s.removed; });
-    var expandAll = total <= EXPAND_LIMIT;
-    var togl = el("div", "filetogl", null);
-    var openBtn = iconButton("모두 펼치기", "unfold", "expandAll");
-    var closeBtn = iconButton("모두 접기", "fold", "collapseAll");
-    togl.appendChild(openBtn); togl.appendChild(closeBtn);
-    sec.appendChild(togl);
+    var openByDefault = total <= EXPAND_LIMIT;
     var parts = renderFileTree(sec, sections, d.files || []);
     sec.appendChild(parts.wrap);
-    renderDiffBlock(sections, d.files || [], parts.diffs, expandAll);
-    openBtn.addEventListener("click", function () {
-      setAllOpen(sec, true);
-    });
-    closeBtn.addEventListener("click", function () {
-      setAllOpen(sec, false);
-    });
+    renderDiffBlock(sections, d.files || [], parts.diffs, openByDefault);
     return sec;
-  }
-
-  // 모두 펼치기/접기. 실제 DOM 기준으로 파일 diff details만 열고 닫는다.
-  // (구 코드는 스텁 DOM 모양인 n.tag/.children 배열을 가정해 실제 브라우저에서 동작하지 않았다)
-  function setAllOpen(root, open) {
-    if (root.querySelectorAll) {
-      var list = root.querySelectorAll('details[data-role="file-diff"]');
-      for (var i = 0; i < list.length; i++) list[i].open = open;
-      return;
-    }
-    var stack = [root];
-    while (stack.length > 0) {
-      var n = stack.pop();
-      if (isFileDiff(n)) n.open = open;
-      var ch = n.children || [];
-      var arr = (typeof ch.length === "number") ? Array.prototype.slice.call(ch) : [];
-      for (var j = 0; j < arr.length; j++) {
-        if (arr[j] && typeof arr[j] === "object") stack.push(arr[j]);
-      }
-    }
-  }
-
-  function isFileDiff(n) {
-    if (!n || typeof n !== "object") return false;
-    var tag = n.tag || n.tagName;
-    if (tag !== "details" && tag !== "DETAILS") return false;
-    if (n.attrs && n.attrs["data-role"] === "file-diff") return true;
-    var cls = n.className || "";
-    return (" " + cls + " ").indexOf(" filediff ") >= 0;
   }
 
   function renderDetail(d) {
@@ -918,7 +1152,8 @@
 
   function setBusy(b) {
     state.busy = b;
-    runAllBtn.disabled = b;
+    renderRunAll();
+    renderSubmitBtn();
     ["approveBtn", "rejectBtn"].forEach(function (id) {
       var n = document.getElementById(id);
       if (n) n.disabled = b;
@@ -927,29 +1162,156 @@
     if (note) note.disabled = b;
   }
 
-  function decide(caseId, kind, note) {
+  function markDraft(caseId, kind, note) {
     showError("");
-    setBusy(true);
+    var cur = state.drafts[caseId];
+    if (cur && cur.kind === kind) {
+      delete state.drafts[caseId];
+      persistDrafts();
+      renderList();
+      renderSubmitBtn();
+      selectCase(caseId);
+      return;
+    }
+    if (kind === "reject" && (!note || note.trim() === "")) {
+      showError("반려 표시에는 사유가 필요합니다. 사유를 입력한 뒤 다시 눌러주세요");
+      return;
+    }
+    state.drafts[caseId] = { kind: kind, note: kind === "reject" ? note : (note || "") };
+    persistDrafts();
+    renderList();
+    renderSubmitBtn();
     var pendingIds = pendingCases().map(function (c) { return c.case_id; });
     var idx = pendingIds.indexOf(caseId);
-    var path = "/api/cases/" + encodeURIComponent(caseId) + "/" + kind;
-    api(path, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(kind === "reject" ? { note: note } : { note: note || undefined })
-    }).then(function () {
-      return refresh().then(function () {
-        var np = pendingCases().map(function (c) { return c.case_id; });
-        if (np.length === 0) {
-          state.selected = null;
-          renderDetailEmpty("대기 중인 건이 없습니다");
-          return;
-        }
-        selectCase(np[idx] || np[np.length - 1]);
+    var next = pendingIds[idx + 1] || pendingIds[idx];
+    if (next && next !== caseId) selectCase(next);
+    else selectCase(caseId);
+  }
+
+  function openSubmitModal() {
+    pruneDrafts();
+    var ids = draftIds();
+    if (ids.length === 0) return;
+    modalOverlay.textContent = "";
+    var box = el("div", "submitmodal", null);
+    box.setAttribute("data-role", "submit-modal");
+    box.setAttribute("role", "dialog");
+    box.setAttribute("aria-label", "결정 제출 확인");
+    box.appendChild(el("h2", null, "결정 제출"));
+    var body = el("div", "mbody", null);
+    var commits = state.stats ? state.stats.sandbox_commits : 0;
+    var approves = ids.filter(function (id) { return state.drafts[id].kind === "approve"; });
+    var rejects = ids.filter(function (id) { return state.drafts[id].kind === "reject"; });
+    if (approves.length > 0) {
+      body.appendChild(el("h3", null, "승인 예정 " + approves.length + "건"));
+      approves.forEach(function (id) {
+        var c = caseById(id);
+        var item = el("div", "mitem", null);
+        item.appendChild(el("span", "cid", id + " "));
+        item.appendChild(el("span", null, c ? c.request : ""));
+        item.appendChild(el("div", "cmeta", "sandbox 커밋 +1 · 현재 " + commits));
+        body.appendChild(item);
       });
-    }).catch(function (e) {
-      showError(e.message + (e.status ? " (" + e.status + ")" : ""));
-    }).then(function () { setBusy(false); });
+    }
+    if (rejects.length > 0) {
+      body.appendChild(el("h3", null, "반려 예정 " + rejects.length + "건"));
+      rejects.forEach(function (id) {
+        var c = caseById(id);
+        var item = el("div", "mitem", null);
+        item.appendChild(el("span", "cid", id + " "));
+        item.appendChild(el("span", null, c ? c.request : ""));
+        item.appendChild(el("div", "cmeta", "사유: " + state.drafts[id].note));
+        body.appendChild(item);
+      });
+    }
+    body.appendChild(el("p", "warn", "제출하면 되돌릴 수 없습니다"));
+    var result = el("div", null, null);
+    result.setAttribute("data-role", "submit-result");
+    body.appendChild(result);
+    box.appendChild(body);
+    var foot = el("div", "mfoot", null);
+    var cancel = el("button", "btn", "취소");
+    cancel.type = "button";
+    cancel.addEventListener("click", function () {
+      modalOverlay.setAttribute("hidden", "");
+      modalOverlay.textContent = "";
+    });
+    var confirm = el("button", "btn btn-primary", "제출");
+    confirm.type = "button";
+    confirm.setAttribute("data-role", "submit-confirm");
+    confirm.addEventListener("click", function () {
+      submitAll(result, foot, cancel, confirm);
+    });
+    foot.appendChild(cancel);
+    foot.appendChild(confirm);
+    box.appendChild(foot);
+    modalOverlay.appendChild(box);
+    modalOverlay.removeAttribute("hidden");
+  }
+
+  function submitAll(resultEl, footEl, cancelBtn, confirmBtn) {
+    state.submitBusy = true;
+    renderSubmitBtn();
+    confirmBtn.disabled = true;
+    cancelBtn.disabled = true;
+    resultEl.textContent = "";
+    var ids = draftIds();
+    var chain = Promise.resolve();
+    var outcomes = [];
+    ids.forEach(function (id) {
+      chain = chain.then(function () {
+        var draft = state.drafts[id];
+        if (!draft) return;
+        var path = "/api/cases/" + encodeURIComponent(id) + "/" + draft.kind;
+        var payload = draft.kind === "reject"
+          ? { note: draft.note }
+          : (draft.note ? { note: draft.note } : {});
+        return api(path, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        }).then(function () {
+          delete state.drafts[id];
+          outcomes.push({ id: id, ok: true });
+        }).catch(function (e) {
+          outcomes.push({ id: id, ok: false, error: e.message });
+        });
+      });
+    });
+    chain.then(function () {
+      persistDrafts();
+      outcomes.forEach(function (o) {
+        var row = el("div", "mresult", null);
+        row.appendChild(el("span", "cid", o.id + " "));
+        if (o.ok) row.appendChild(el("span", "ok", "성공"));
+        else {
+          row.appendChild(el("span", "fail", "실패"));
+          row.appendChild(el("span", null, " — " + (o.error || "")));
+        }
+        resultEl.appendChild(row);
+      });
+      return refresh();
+    }).then(function () {
+      renderSubmitBtn();
+      var np = pendingCases().map(function (c) { return c.case_id; });
+      if (state.selected && np.indexOf(state.selected) >= 0) selectCase(state.selected);
+      else if (np.length > 0) selectCase(np[0]);
+      else {
+        state.selected = null;
+        renderDetailEmpty("대기 중인 건이 없습니다");
+      }
+    }).then(function () {
+      state.submitBusy = false;
+      renderSubmitBtn();
+      footEl.textContent = "";
+      var close = el("button", "btn", "닫기");
+      close.type = "button";
+      close.addEventListener("click", function () {
+        modalOverlay.setAttribute("hidden", "");
+        modalOverlay.textContent = "";
+      });
+      footEl.appendChild(close);
+    });
   }
 
   function selectCase(caseId) {
@@ -969,21 +1331,46 @@
   }
 
   function stepSelection(delta) {
-    var rows = (state.view === "pending" ? visiblePending() : historyCases())
+    var rows = (state.view === "pending" ? pendingCases() : historyCases())
       .map(function (c) { return c.case_id; });
     if (rows.length === 0) return;
     var i = rows.indexOf(state.selected);
     if (i < 0) i = delta > 0 ? 0 : rows.length - 1;
     else i = Math.min(rows.length - 1, Math.max(0, i + delta));
+    state.fileCommit = null;
     selectCase(rows[i]);
   }
 
   document.addEventListener("keydown", function (e) {
+    if (!modalOverlay.hasAttribute("hidden")) return;
     var t = e.target;
     if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
     if (e.key === "j") stepSelection(1);
     else if (e.key === "k") stepSelection(-1);
   });
+
+  function setPanelCollapsed(collapsed) {
+    state.collapsed = collapsed;
+    panelEl.setAttribute("data-collapsed", collapsed ? "true" : "false");
+    panelToggle.textContent = "";
+    panelToggle.appendChild(icon(collapsed ? "sidebarExpand" : "sidebarCollapse"));
+    panelToggle.setAttribute("aria-label", collapsed ? "패널 펼치기" : "패널 접기");
+    panelToggle.setAttribute("title", collapsed ? "패널 펼치기" : "패널 접기");
+    if (collapsed) {
+      panelVLabel.textContent = "대기 " + pendingCases().length;
+      panelVLabel.removeAttribute("hidden");
+    } else {
+      panelVLabel.setAttribute("hidden", "");
+    }
+    lsSet(PANEL_KEY, collapsed ? "1" : "0");
+  }
+
+  function setView(v) {
+    state.view = v;
+    tabPending.setAttribute("aria-selected", v === "pending" ? "true" : "false");
+    tabHistory.setAttribute("aria-selected", v === "history" ? "true" : "false");
+    renderList();
+  }
 
   function refresh() {
     return api("/api/stats").then(function (s) {
@@ -992,7 +1379,9 @@
       return api("/api/cases");
     }).then(function (cases) {
       state.cases = cases;
+      pruneDrafts();
       renderList();
+      renderSubmitBtn();
       return api("/api/tree").then(function (t) {
         state.tree = t;
       }).catch(function () {
@@ -1001,13 +1390,14 @@
     }).then(function () {
       renderList();
       renderWorkspaceTree();
+      if (state.collapsed) setPanelCollapsed(true);
     }).catch(function (e) {
       statsEl.textContent = e.message;
     });
   }
 
-  runAllBtn.appendChild(icon("play"));
-  runAllBtn.appendChild(el("span", null, "전체 실행"));
+  runAllBtn.appendChild(icon("sync"));
+  runAllBtn.appendChild(el("span", null, "새 산출물 가져오기"));
   runAllBtn.addEventListener("click", function () {
     setBusy(true);
     api("/api/run-all", { method: "POST" }).then(function (s) {
@@ -1016,23 +1406,39 @@
       return api("/api/cases");
     }).then(function (cases) {
       state.cases = cases;
-      state.selected = null;
+      pruneDrafts();
       renderList();
+      renderSubmitBtn();
+      return api("/api/tree").then(function (t) {
+        state.tree = t;
+      }).catch(function () {
+        state.tree = [];
+      });
+    }).then(function () {
+      state.selected = null;
+      state.highlight = null;
+      state.fileCommit = null;
+      renderList();
+      renderWorkspaceTree();
       renderDetailEmpty("목록에서 건을 선택하세요");
     }).catch(function (e) {
       statsEl.textContent = e.message;
     }).then(function () { setBusy(false); });
   });
 
-  function setView(v) {
-    state.view = v;
-    tabPending.setAttribute("aria-selected", v === "pending" ? "true" : "false");
-    tabHistory.setAttribute("aria-selected", v === "history" ? "true" : "false");
-    renderList();
-  }
+  submitBtn.addEventListener("click", function () {
+    openSubmitModal();
+  });
+
+  panelToggle.addEventListener("click", function () {
+    setPanelCollapsed(!state.collapsed);
+  });
+
   tabPending.addEventListener("click", function () { setView("pending"); });
   tabHistory.addEventListener("click", function () { setView("history"); });
 
+  loadDrafts();
+  setPanelCollapsed(lsGet(PANEL_KEY) === "1");
   renderDetailEmpty("목록에서 건을 선택하세요");
   refresh();
 })();

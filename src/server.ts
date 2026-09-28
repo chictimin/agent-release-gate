@@ -11,8 +11,11 @@ import {
   openGate,
   resumeCase,
   runNotRun,
+  threadConfig,
+  type CaseDetail,
   type GateHandles,
 } from "./gate/runner.js";
+import { buildCommitMessage } from "./gate/appliers.js";
 
 const root = process.env.GATE_ROOT ?? join(dirname(fileURLToPath(import.meta.url)), "..");
 const uiPath = join(root, "src", "ui.html");
@@ -68,10 +71,117 @@ function readBody(req: IncomingMessage): Promise<unknown> {
   });
 }
 
-/** GET /api/tree: sandbox main HEAD 추적 파일 + pending 건이 새로 만드는 파일. gate 코어는 건드리지 않는다. */
-export async function listTree(
+/** rev3: 해당 thread 최신 체크포인트 시각 ISO 문자열. not_run이면 null. d.ts: @langchain/langgraph pregel/types.d.ts StateSnapshot.createdAt */
+export async function caseUpdatedAt(
   h: GateHandles,
-): Promise<{ path: string; exists_on_main: boolean; pending_cases: string[] }[]> {
+  caseId: string,
+): Promise<string | null> {
+  try {
+    const snap = await h.graph.getState(threadConfig(caseId));
+    const v = snap.values as Record<string, unknown>;
+    const ran =
+      typeof v === "object" &&
+      v !== null &&
+      typeof v["request"] === "string" &&
+      v["request"] !== "";
+    if (!ran) return null;
+    return typeof snap.createdAt === "string" ? snap.createdAt : null;
+  } catch {
+    return null;
+  }
+}
+
+/** rev3: CaseSummary + files + updated_at */
+export async function listEnrichedSummaries(h: GateHandles): Promise<
+  {
+    case_id: string;
+    request: string;
+    status: string;
+    stop_reasons: string[];
+    risk_score: number | null;
+    files: string[];
+    updated_at: string | null;
+  }[]
+> {
+  const out: {
+    case_id: string;
+    request: string;
+    status: string;
+    stop_reasons: string[];
+    risk_score: number | null;
+    files: string[];
+    updated_at: string | null;
+  }[] = [];
+  for (const s of await listSummaries(h)) {
+    if (s.status === "not_run") {
+      out.push({ ...s, files: [], updated_at: null });
+      continue;
+    }
+    const d = await getDetail(h, s.case_id);
+    out.push({
+      ...s,
+      files: d?.files ?? [],
+      updated_at: await caseUpdatedAt(h, s.case_id),
+    });
+  }
+  return out;
+}
+
+/** rev4: CaseDetail + commit_message. pending은 승인 시 남을 메시지, 처리 건은 commit_sha의 실제 메시지, rejected·커밋 없음은 "" */
+export async function getEnrichedDetail(
+  h: GateHandles,
+  caseId: string,
+): Promise<(CaseDetail & { commit_message: string }) | null> {
+  const d = await getDetail(h, caseId);
+  if (d === null) return null;
+  let commit_message = "";
+  if (d.status === "pending") {
+    commit_message = buildCommitMessage(d.case_id, d.request);
+  } else if (d.commit_sha) {
+    try {
+      commit_message = execFileSync(
+        "git",
+        ["log", "-1", "--format=%B", d.commit_sha],
+        { cwd: h.sandboxDir, encoding: "utf8" },
+      ).trim();
+    } catch {
+      commit_message = "";
+    }
+  }
+  return { ...d, commit_message };
+}
+
+/** rev4: sandbox main에서 그 경로의 마지막 커밋. main에 없는 파일은 null */
+export function lastCommitFor(
+  h: GateHandles,
+  path: string,
+): { sha: string; subject: string; date: string } | null {
+  try {
+    const out = execFileSync(
+      "git",
+      ["log", "-1", "--format=%H%n%s%n%cI", "main", "--", path],
+      { cwd: h.sandboxDir, encoding: "utf8" },
+    ).trim();
+    if (out === "") return null;
+    const lines = out.split("\n");
+    const sha = lines[0] ?? "";
+    if (sha === "") return null;
+    return { sha, subject: lines[1] ?? "", date: lines[2] ?? "" };
+  } catch {
+    return null;
+  }
+}
+
+/** GET /api/tree: sandbox main HEAD 추적 파일 + pending 건이 새로 만드는 파일. gate 코어는 건드리지 않는다. */
+export async function listTree(h: GateHandles): Promise<
+  {
+    path: string;
+    exists_on_main: boolean;
+    pending_cases: string[];
+    history_cases: string[];
+    last_commit: { sha: string; subject: string; date: string } | null;
+  }[]
+> {
   let tracked: string[] = [];
   try {
     tracked = execFileSync("git", ["ls-files"], { cwd: h.sandboxDir, encoding: "utf8" })
@@ -83,20 +193,35 @@ export async function listTree(
   }
   const onMain = new Set(tracked);
   const pendingFiles = new Map<string, string[]>();
-  for (const s of await listSummaries(h)) {
-    if (s.status !== "pending") continue;
-    const d = await getDetail(h, s.case_id);
-    for (const f of d?.files ?? []) {
-      const arr = pendingFiles.get(f) ?? [];
-      arr.push(s.case_id);
-      pendingFiles.set(f, arr);
+  const historyFiles = new Map<string, { id: string; at: string }[]>();
+  for (const s of await listEnrichedSummaries(h)) {
+    if (s.status === "not_run") continue;
+    for (const f of s.files) {
+      if (s.status === "pending") {
+        const arr = pendingFiles.get(f) ?? [];
+        arr.push(s.case_id);
+        pendingFiles.set(f, arr);
+      } else {
+        const arr = historyFiles.get(f) ?? [];
+        arr.push({ id: s.case_id, at: s.updated_at ?? "" });
+        historyFiles.set(f, arr);
+      }
     }
   }
-  const all = new Set<string>([...onMain, ...pendingFiles.keys()]);
+  for (const arr of historyFiles.values()) {
+    arr.sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
+  }
+  const all = new Set<string>([
+    ...onMain,
+    ...pendingFiles.keys(),
+    ...historyFiles.keys(),
+  ]);
   return [...all].sort().map((path) => ({
     path,
     exists_on_main: onMain.has(path),
     pending_cases: pendingFiles.get(path) ?? [],
+    history_cases: (historyFiles.get(path) ?? []).map((e) => e.id),
+    last_commit: onMain.has(path) ? lastCommitFor(h, path) : null,
   }));
 }
 
@@ -114,7 +239,7 @@ const server = createServer((req, res) => {
         return;
       }
       if (method === "GET" && parts.join("/") === "api/cases") {
-        sendJson(res, 200, await listSummaries(handles));
+        sendJson(res, 200, await listEnrichedSummaries(handles));
         return;
       }
       if (method === "GET" && parts.join("/") === "api/stats") {
@@ -137,7 +262,7 @@ const server = createServer((req, res) => {
       ) {
         const caseId = decodeURIComponent(parts[2]);
         if (method === "GET") {
-          const detail = await getDetail(handles, caseId);
+          const detail = await getEnrichedDetail(handles, caseId);
           if (detail === null) throw new GateHttpError(404, `unknown case: ${caseId}`);
           sendJson(res, 200, detail);
           return;
@@ -156,13 +281,17 @@ const server = createServer((req, res) => {
           if (parts[3] === "reject" && (note === undefined || note.trim() === "")) {
             throw new GateHttpError(400, "note is required");
           }
-          const detail = await resumeCase(
+          await resumeCase(
             handles,
             caseId,
             parts[3] as "approve" | "reject",
             note,
           );
-          sendJson(res, 200, detail);
+          sendJson(
+            res,
+            200,
+            (await getEnrichedDetail(handles, caseId)) ?? { error: "unreachable" },
+          );
           return;
         }
       }
